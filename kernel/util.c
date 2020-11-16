@@ -1,4 +1,4 @@
-#include "./util.h"
+#include "util.h"
 
 void memory_copy(char *source, char *dest, int nbytes)
 {

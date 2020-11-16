@@ -1,7 +1,9 @@
+#include "ports.h"
+
 /**
  * Read a byte from the specified port
  */
-unsigned char port_byte_in(unsigned short port)
+unsigned char port_byte_read(unsigned short port)
 {
   unsigned char result;
   /* Inline assembler syntax
@@ -18,7 +20,7 @@ unsigned char port_byte_in(unsigned short port)
   return result;
 }
 
-void port_byte_out(unsigned short port, unsigned char data)
+void port_byte_write(unsigned short port, unsigned char data)
 {
   /* Notice how here both registers are mapped to C variables and
      * nothing is returned, thus, no equals '=' in the asm syntax
@@ -30,7 +32,7 @@ void port_byte_out(unsigned short port, unsigned char data)
           : "a"(data), "d"(port));
 }
 
-unsigned short port_word_in(unsigned short port)
+unsigned short port_word_read(unsigned short port)
 {
   unsigned short result;
   __asm__("in %%dx, %%ax"
@@ -39,7 +41,7 @@ unsigned short port_word_in(unsigned short port)
   return result;
 }
 
-void port_word_out(unsigned short port, unsigned short data)
+void port_word_write(unsigned short port, unsigned short data)
 {
   __asm__("out %%ax, %%dx"
           :
