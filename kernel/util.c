@@ -11,7 +11,7 @@ void memory_copy(char *source, char *dest, int nbytes)
 /**
  * K&R implementation
  */
-void int_to_ascii(int n, char str[])
+void itoa(int n, char str[])
 {
   int i, sign;
   if ((sign = n) < 0)
