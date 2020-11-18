@@ -1,16 +1,20 @@
 #include "keyboard.h"
-#include "ports.h"
 #include "screen.h"
+#include "../cpu/ports.h"
 #include "../cpu/isr.h"
-#include "../kernel/util.h"
+#include "../libc/string.h"
+#include "../libc/function.h"
 
 void print_letter(u8 scancode);
 
 static void keyboard_callback(registers_t regs)
 {
+  UNUSED(regs);
+
   // The PIC leaves us the scancode in port 0x60
   u8 scancode = port_byte_read(0x60);
-  char *sc_ascii;
+  char sc_ascii[10];
+
   itoa(scancode, sc_ascii);
   kprint("Keyboard scancode: ");
   kprint(sc_ascii);

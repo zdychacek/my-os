@@ -1,5 +1,5 @@
 #include "pic.h"
-#include "ports.h"
+#include "../cpu/ports.h"
 
 /*
 arguments:

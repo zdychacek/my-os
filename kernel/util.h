@@ -1,9 +1,0 @@
-#ifndef UTIL_H
-#define UTIL_H
-
-void memory_copy(char *source, char *dest, int nbytes);
-void itoa(int n, char str[]);
-void strrev(char *str);
-int strlen(const char *str);
-
-#endif

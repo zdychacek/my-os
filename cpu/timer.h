@@ -2,7 +2,6 @@
 #define TIMER_H
 
 #include "types.h"
-#include "../kernel/util.h"
 
 #define PIT_DATA_0 0x40
 #define PIT_DATA_1 0x41
