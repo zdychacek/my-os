@@ -1,7 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "types.h"
+#include "type.h"
 
 #define PIT_DATA_0 0x40
 #define PIT_DATA_1 0x41

@@ -1,5 +1,5 @@
 #include "ports.h"
-#include "../cpu/types.h"
+#include "../cpu/type.h"
 
 /**
  * Read a byte from the specified port
