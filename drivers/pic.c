@@ -10,8 +10,8 @@ arguments:
 void PIC_remap(int offset1, int offset2)
 {
   // save masks
-  u8 a1 = port_byte_read(PIC1_DATA);
-  u8 a2 = port_byte_read(PIC2_DATA);
+  uint8_t a1 = port_byte_read(PIC1_DATA);
+  uint8_t a2 = port_byte_read(PIC2_DATA);
 
   // starts the initialization sequence (in cascade mode)
   port_byte_write(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
@@ -28,7 +28,7 @@ void PIC_remap(int offset1, int offset2)
   port_byte_write(PIC2_DATA, a2);
 }
 
-void PIC_sendEOI(u8 int_num)
+void PIC_sendEOI(uint8_t int_num)
 {
   if (int_num >= 40)
     port_byte_write(PIC2_COMMAND, PIC_EOI);
@@ -36,10 +36,10 @@ void PIC_sendEOI(u8 int_num)
   port_byte_write(PIC1_COMMAND, PIC_EOI);
 }
 
-void IRQ_set_mask(u8 IRQline)
+void IRQ_set_mask(uint8_t IRQline)
 {
-  u16 port;
-  u8 value;
+  uint16_t port;
+  uint8_t value;
 
   if (IRQline < 8)
   {
@@ -54,10 +54,10 @@ void IRQ_set_mask(u8 IRQline)
   port_byte_write(port, value);
 }
 
-void IRQ_clear_mask(u8 IRQline)
+void IRQ_clear_mask(uint8_t IRQline)
 {
-  u16 port;
-  u8 value;
+  uint16_t port;
+  uint8_t value;
 
   if (IRQline < 8)
   {

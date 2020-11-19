@@ -1,11 +1,11 @@
 #ifndef PORTS_H
 #define PORTS_H
 
-#include "../cpu/type.h"
+#include <stdint.h>
 
-u8 port_byte_read(u16 port);
-void port_byte_write(u16 port, u8 data);
-u16 port_word_read(u16 port);
-void port_word_write(u16 port, u16 data);
+uint8_t port_byte_read(uint16_t port);
+void port_byte_write(uint16_t port, uint8_t data);
+uint16_t port_word_read(uint16_t port);
+void port_word_write(uint16_t port, uint16_t data);
 
 #endif

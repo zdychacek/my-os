@@ -1,7 +1,7 @@
 #ifndef TIMER_H
 #define TIMER_H
 
-#include "type.h"
+#include <stdint.h>
 
 #define PIT_DATA_0 0x40
 #define PIT_DATA_1 0x41
@@ -9,6 +9,6 @@
 #define PIT_COMMAND 0x43
 #define PIT_REPEATING_MODE 0x36
 
-void init_timer(u32 freq);
+void init_timer(uint32_t freq);
 
 #endif

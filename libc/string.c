@@ -1,5 +1,4 @@
 #include "string.h"
-#include "../cpu/type.h"
 
 void itoa(int n, char *str)
 {
@@ -72,7 +71,7 @@ void hex_to_ascii(int n, char *str)
   append(str, 'x');
   char zeros = 0;
 
-  s32 tmp;
+  int tmp;
 
   for (int i = 28; i > 0; i -= 4)
   {

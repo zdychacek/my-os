@@ -27,7 +27,6 @@
 %macro interrupt_request_handler 2
   global irq%1
   irq%1:
-    cli
     push dword %1
     push dword %2
     jmp irq_common_stub
@@ -36,28 +35,30 @@
 ; Common ISR code
 isr_common_stub:
   ; 1. Save CPU state
-	pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
-	mov ax, ds ; Lower 16-bits of eax = ds.
-	push eax ; save the data segment descriptor
-	mov ax, 0x10  ; kernel data segment descriptor
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
+  pusha ; Pushes edi,esi,ebp,esp,ebx,edx,ecx,eax
+  mov ax, ds ; Lower 16-bits of eax = ds.
+  push eax ; save the data segment descriptor
+  mov ax, 0x10  ; kernel data segment descriptor
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  push esp
 
+  cld
   ; 2. Call C handler
-	call isr_handler
+  call isr_handler
 
   ; 3. Restore state
-	pop eax
-	mov ds, ax
-	mov es, ax
-	mov fs, ax
-	mov gs, ax
-	popa
-	add esp, 8 ; Cleans up the pushed error code and pushed ISR number
-	sti
-	iret ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
+  pop eax
+  pop eax
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+  popa
+  add esp, 8 ; Cleans up the pushed error code and pushed ISR number
+  iret ; pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP
 
 ; Common IRQ code. Identical to ISR code except for the 'call'
 ; and the 'pop ebx'
@@ -70,17 +71,19 @@ irq_common_stub:
   mov es, ax
   mov fs, ax
   mov gs, ax
+  push esp
 
+  cld
   call irq_handler ; Different than the ISR code
 
   pop ebx  ; Different than the ISR code
+  pop ebx
   mov ds, bx
   mov es, bx
   mov fs, bx
   mov gs, bx
   popa
   add esp, 8
-  sti
   iret
 
 ; 0: Divide By Zero Exception

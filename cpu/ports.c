@@ -1,12 +1,11 @@
 #include "ports.h"
-#include "../cpu/type.h"
 
 /**
  * Read a byte from the specified port
  */
-u8 port_byte_read(u16 port)
+uint8_t port_byte_read(uint16_t port)
 {
-  u8 result;
+  uint8_t result;
   /* Inline assembler syntax
      * !! Notice how the source and destination registers are switched from NASM !!
      *
@@ -21,7 +20,7 @@ u8 port_byte_read(u16 port)
   return result;
 }
 
-void port_byte_write(u16 port, u8 data)
+void port_byte_write(uint16_t port, uint8_t data)
 {
   /* Notice how here both registers are mapped to C variables and
      * nothing is returned, thus, no equals '=' in the asm syntax
@@ -33,16 +32,16 @@ void port_byte_write(u16 port, u8 data)
       : "a"(data), "d"(port));
 }
 
-u16 port_word_read(u16 port)
+uint16_t port_word_read(uint16_t port)
 {
-  u16 result;
+  uint16_t result;
   asm("in %%dx, %%ax"
       : "=a"(result)
       : "d"(port));
   return result;
 }
 
-void port_word_write(u16 port, u16 data)
+void port_word_write(uint16_t port, uint16_t data)
 {
   asm("out %%ax, %%dx"
       :
