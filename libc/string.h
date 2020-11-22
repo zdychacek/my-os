@@ -1,7 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 
-void itoa(int n, char *str);
+char *itoa(int num, char *str, int base);
 void strrev(char s[]);
 int strlen(const char *s);
 int strcmp(const char *s1, const char *s2);

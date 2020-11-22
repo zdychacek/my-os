@@ -17,6 +17,7 @@ uint8_t port_byte_read(uint16_t port)
   asm("in %%dx, %%al"
       : "=a"(result)
       : "d"(port));
+
   return result;
 }
 
@@ -35,9 +36,11 @@ void port_byte_write(uint16_t port, uint8_t data)
 uint16_t port_word_read(uint16_t port)
 {
   uint16_t result;
+
   asm("in %%dx, %%ax"
       : "=a"(result)
       : "d"(port));
+
   return result;
 }
 
@@ -47,3 +50,19 @@ void port_word_write(uint16_t port, uint16_t data)
       :
       : "a"(data), "d"(port));
 }
+
+uint32_t port_long_read(uint32_t port)
+{
+  uint32_t result;
+
+  asm("inl %%dx,%%eax"
+      : "=a"(result)
+      : "d"(port));
+
+  return result;
+}
+
+void port_long_write(uint32_t port, uint32_t data)
+{
+  asm("outl %%eax,%%dx" ::"d"(port), "a"(data));
+};

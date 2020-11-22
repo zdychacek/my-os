@@ -1,21 +1,46 @@
+#include <stdint.h>
+#include <stdbool.h>
 #include "string.h"
 
-void itoa(int n, char *str)
+char *itoa(int num, char *str, int base)
 {
-  int i, sign;
-  if ((sign = n) < 0)
-    n = -n;
-  i = 0;
-  do
+  int i = 0;
+  bool isNegative = false;
+
+  /* Handle 0 explicitely, otherwise empty string is printed for 0 */
+  if (num == 0)
   {
-    str[i++] = n % 10 + '0';
-  } while ((n /= 10) > 0);
+    str[i++] = '0';
+    str[i] = '\0';
+    return str;
+  }
 
-  if (sign < 0)
+  // In standard itoa(), negative numbers are handled only with
+  // base 10. Otherwise numbers are considered unsigned.
+  if (num < 0 && base == 10)
+  {
+    isNegative = true;
+    num = -num;
+  }
+
+  // Process individual digits
+  while (num != 0)
+  {
+    int rem = num % base;
+    str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+    num = num / base;
+  }
+
+  // If number is negative, append '-'
+  if (isNegative)
     str[i++] = '-';
-  str[i] = '\0';
 
+  str[i] = '\0'; // Append string terminator
+
+  // Reverse the string
   strrev(str);
+
+  return str;
 }
 
 void strrev(char *str)

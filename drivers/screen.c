@@ -2,8 +2,9 @@
 #include "screen.h"
 #include "../cpu/ports.h"
 #include "../libc/mem.h"
+#include "../libc/string.h"
 
-/* Declaration of private functions */
+// Declaration of private functions
 int get_cursor_offset();
 void set_cursor_offset(int offset);
 int print_char(char c, int col, int row, char attr);
@@ -21,8 +22,9 @@ int get_offset_col(int offset);
  */
 void kprint_at(char *message, int col, int row)
 {
-  /* Set cursor if col/row are negative */
+  // Set cursor if col/row are negative
   int offset;
+
   if (col >= 0 && row >= 0)
     offset = get_offset(col, row);
   else
@@ -32,12 +34,13 @@ void kprint_at(char *message, int col, int row)
     col = get_offset_col(offset);
   }
 
-  /* Loop through message and print it */
+  // Loop through message and print it
   int i = 0;
+
   while (message[i] != 0)
   {
     offset = print_char(message[i++], col, row, WHITE_ON_BLACK);
-    /* Compute row/col for next iteration */
+    // Compute row/col for next iteration
     row = get_offset_row(offset);
     col = get_offset_col(offset);
   }
@@ -55,6 +58,70 @@ void kprint_backspace()
   int col = get_offset_col(offset);
 
   print_char(0x08, col, row, WHITE_ON_BLACK);
+}
+
+void kprintf(const char *format, ...)
+{
+  char **arg = (char **)&format;
+  char c;
+  char buf[20];
+
+  arg++;
+
+  while ((c = *format++) != 0)
+  {
+    if (c != '%')
+      print_char(c, -1, -1, 0);
+    else
+    {
+      char *p, *p2;
+      int pad0 = 0, pad = 0;
+
+      c = *format++;
+      if (c == '0')
+      {
+        pad0 = 1;
+        c = *format++;
+      }
+
+      if (c >= '0' && c <= '9')
+      {
+        pad = c - '0';
+        c = *format++;
+      }
+
+      switch (c)
+      {
+      case 'u':
+      case 'd':
+        itoa(*((int *)arg++), buf, 10);
+        p = buf;
+        goto string;
+        break;
+      case 'X':
+      case 'x':
+        itoa(*((int *)arg++), buf, 16);
+        p = buf;
+        goto string;
+        break;
+      case 's':
+        p = *arg++;
+        if (!p)
+          p = "(null)";
+      string:
+        for (p2 = p; *p2; p2++)
+          ;
+        for (; p2 < p + pad; p2++)
+          print_char(pad0 ? '0' : ' ', -1, -1, 0);
+        while (*p)
+          print_char(*p++, -1, -1, 0);
+        break;
+      default:
+        print_char(*((int *)arg++), -1, -1, 0);
+        break;
+      }
+    }
+  }
 }
 
 /**********************************************************
@@ -84,6 +151,7 @@ int print_char(char c, int col, int row, char attr)
   }
 
   int offset;
+
   if (col >= 0 && row >= 0)
     offset = get_offset(col, row);
   else

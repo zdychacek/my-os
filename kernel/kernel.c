@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "../cpu/isr.h"
 #include "../drivers/screen.h"
+#include "../drivers/ata.h"
 #include "../libc/string.h"
 #include "../libc/mem.h"
 
@@ -10,6 +11,21 @@ void _start()
 
   isr_install();
   irq_install();
+
+  uint32_t *data = (uint32_t *)kmalloc(512, 1, NULL);
+
+  read_sectors_ATA_PIO(data, 0, 1);
+
+  int i = 0;
+
+  while (i < 128)
+  {
+    kprintf("%x ", data[i] & 0xFF);
+    kprintf("%x ", (data[i] >> 8) & 0xFF);
+    kprintf("%x ", (data[i] >> 16) & 0xFF);
+    kprintf("%x ", (data[i] >> 24) & 0xFF);
+    i++;
+  }
 
   kprint("Type something, it will go through the kernel\n"
          "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
