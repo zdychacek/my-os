@@ -1,5 +1,4 @@
-#ifndef TIMER_H
-#define TIMER_H
+#pragma once
 
 #include <stdint.h>
 
@@ -10,5 +9,3 @@
 #define PIT_REPEATING_MODE 0x36
 
 void init_timer(uint32_t freq);
-
-#endif

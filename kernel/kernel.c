@@ -2,6 +2,7 @@
 #include "../cpu/isr.h"
 #include "../drivers/screen.h"
 #include "../drivers/ata.h"
+#include "../drivers/rtc.h"
 #include "../libc/string.h"
 #include "../libc/mem.h"
 
@@ -11,6 +12,7 @@ void _start()
 
   isr_install();
   irq_install();
+  rtc_install();
 
   uint32_t *data = (uint32_t *)kmalloc(512, 1, NULL);
 

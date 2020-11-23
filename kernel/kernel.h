@@ -1,6 +1,3 @@
-#ifndef KERNEL_H
-#define KERNEL_H
+#pragma once
 
 void user_input(char *input);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef IDT_H
-#define IDT_H
+#pragma once
 
 #include <stdint.h>
 
@@ -32,5 +31,3 @@ typedef struct
 /* Functions implemented in idt.c */
 void set_idt_gate(int n, uint32_t handler);
 void set_idt();
-
-#endif

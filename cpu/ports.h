@@ -1,5 +1,4 @@
-#ifndef PORTS_H
-#define PORTS_H
+#pragma once
 
 #include <stdint.h>
 
@@ -11,5 +10,3 @@ void port_word_write(uint16_t port, uint16_t data);
 
 uint32_t port_long_read(uint32_t port);
 void port_long_write(uint32_t port, uint32_t data);
-
-#endif
