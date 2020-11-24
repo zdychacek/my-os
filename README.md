@@ -8,8 +8,8 @@ Hobby OS.
   - paging
   - virtual memory
   - API:
-    - malloc
-    - free
+    - [x] malloc
+    - [x] free
 - persistent storage:
   - ATA driver
   - ext2 filesystem

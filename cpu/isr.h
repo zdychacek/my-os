@@ -80,9 +80,9 @@ typedef struct
   uint32_t eip, cs, eflags, esp, ss;                   /* Pushed by the processor automatically */
 } registers_t;
 
-void isr_install();
+void isr_init();
 void isr_handler(registers_t *r);
-void irq_install();
+void irq_init();
 
 typedef void (*isr_t)(registers_t *);
 void register_interrupt_handler(uint8_t n, isr_t handler);

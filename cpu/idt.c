@@ -1,5 +1,5 @@
 #include "idt.h"
-#include "../libc/utils.h"
+#include "../lib/utils.h"
 
 #define IDT_ENTRIES 256
 

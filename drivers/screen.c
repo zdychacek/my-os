@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include "screen.h"
 #include "../cpu/ports.h"
-#include "../libc/mem.h"
-#include "../libc/string.h"
+#include "../lib/mem.h"
+#include "../lib/string.h"
 
 // Declaration of private functions
 int get_cursor_offset();
@@ -178,9 +178,9 @@ int print_char(char c, int col, int row, char attr)
   if (offset >= MAX_ROWS * MAX_COLS * 2)
   {
     for (int i = 1; i < MAX_ROWS; i++)
-      memory_copy((uint8_t *)get_offset(0, i) + VIDEO_ADDRESS,
-                  (uint8_t *)get_offset(0, i - 1) + VIDEO_ADDRESS,
-                  MAX_COLS * 2);
+      memcpy((uint8_t *)get_offset(0, i - 1) + VIDEO_ADDRESS,
+             (uint8_t *)get_offset(0, i) + VIDEO_ADDRESS,
+             MAX_COLS * 2);
 
     /* Blank last line */
     char *last_line = (char *)get_offset(0, MAX_ROWS - 1) + VIDEO_ADDRESS;

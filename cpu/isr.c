@@ -5,13 +5,13 @@
 #include "../drivers/pic.h"
 #include "../drivers/keyboard.h"
 #include "../cpu/timer.h"
-#include "../libc/string.h"
+#include "../lib/string.h"
 
 isr_t interrupt_handlers[256];
 
 /* Can't do this with a loop because we need the address
  * of the function names */
-void isr_install()
+void isr_init()
 {
   set_idt_gate(0, (uint32_t)isr0);
   set_idt_gate(1, (uint32_t)isr1);
@@ -137,7 +137,7 @@ void irq_handler(registers_t *r)
   }
 }
 
-void irq_install()
+void irq_init()
 {
   // Enable interruptions
   asm volatile("sti");

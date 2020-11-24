@@ -3,34 +3,28 @@
 #include "../drivers/screen.h"
 #include "../drivers/ata.h"
 #include "../drivers/rtc.h"
-#include "../libc/string.h"
-#include "../libc/mem.h"
+#include "../lib/string.h"
+#include "../lib/mem.h"
 
 void _start()
 {
+  // TODO: get kernel base/end from bootloader
+  memory_init(0x10000);
+  memory_print_info();
+
   clear_screen();
 
-  isr_install();
-  irq_install();
-  rtc_install();
+  isr_init();
+  irq_init();
+  rtc_init();
 
-  uint32_t *data = (uint32_t *)kmalloc(512, 1, NULL);
-
-  read_sectors_ATA_PIO(data, 0, 1);
-
-  int i = 0;
-
-  while (i < 128)
-  {
-    kprintf("%x ", data[i] & 0xFF);
-    kprintf("%x ", (data[i] >> 8) & 0xFF);
-    kprintf("%x ", (data[i] >> 16) & 0xFF);
-    kprintf("%x ", (data[i] >> 24) & 0xFF);
-    i++;
-  }
-
-  kprint("Type something, it will go through the kernel\n"
-         "Type END to halt the CPU or PAGE to request a kmalloc()\n> ");
+  kprint("You can type following commands: \n"
+         "- END to halt the CPU\n"
+         "- ALLOC to request a memory from malloc()\n"
+         "- READ to read a data from disk\n"
+         "- TIME to print current date\n"
+         "- MEM to print memory info\n"
+         "> ");
 }
 
 void user_input(char *input)
@@ -40,25 +34,34 @@ void user_input(char *input)
     kprint("Stopping the CPU. Bye!\n");
     asm volatile("hlt");
   }
-  else if (strcmp(input, "PAGE") == 0)
+  else if (strcmp(input, "ALLOC") == 0)
   {
-    // kmalloc test
-    uint32_t phys_addr;
-    uint32_t page = kmalloc(1000, 1, &phys_addr);
+    char *data = (char *)malloc(16);
 
-    char page_str[16] = "";
-    hex_to_ascii(page, page_str);
-    char phys_str[16] = "";
-    hex_to_ascii(phys_addr, phys_str);
+    free(data);
+  }
+  else if (strcmp(input, "READ") == 0)
+  {
+    uint32_t *data = (uint32_t *)malloc(sizeof(uint32_t) * 128);
 
-    kprint("Page: ");
-    kprint(page_str);
-    kprint(", physical address: ");
-    kprint(phys_str);
-    kprint("\n");
+    // read the first sector from the disk
+    read_sectors_ATA_PIO(data, 0, 1);
+
+    kprintf("%x ", data[127] & 0xFF);
+    kprintf("%x ", (data[127] >> 8) & 0xFF);
+    kprintf("%x ", (data[127] >> 16) & 0xFF);
+    kprintf("%x\n", (data[127] >> 24) & 0xFF);
+
+    free(data);
+  }
+  else if (strcmp(input, "TIME") == 0)
+  {
+    rtc_print_time();
+  }
+  else if (strcmp(input, "MEM") == 0)
+  {
+    memory_print_info();
   }
 
-  kprint("You said: ");
-  kprint(input);
   kprint("\n> ");
 }
