@@ -23,12 +23,12 @@ boot:
   call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
   jmp $ ; Never executed
 
-%include "boot/print.asm"
-%include "boot/print_hex.asm"
-%include "boot/disk.asm"
+%include "boot/utils/print.asm"
+%include "boot/utils/print_hex.asm"
+%include "boot/utils/disk.asm"
+%include "boot/utils/32bit_print.asm"
+%include "boot/utils/switch_pm.asm"
 %include "boot/gdt.asm"
-%include "boot/32bit_print.asm"
-%include "boot/switch_pm.asm"
 
 [bits 16]
 load_kernel:
@@ -43,7 +43,7 @@ load_kernel:
   ret
 
 [bits 32]
-BEGIN_PM:
+begin_pm:
   mov ebx, MSG_PROT_MODE
   call print_string_pm
   call KERNEL_OFFSET ; Give control to the kernel

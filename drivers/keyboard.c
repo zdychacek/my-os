@@ -1,7 +1,7 @@
 #include "keyboard.h"
 #include "../cpu/ports.h"
 #include "../cpu/isr.h"
-#include "screen.h"
+#include "display.h"
 #include "../lib/string.h"
 #include "../lib/function.h"
 #include "../kernel/kernel.h"

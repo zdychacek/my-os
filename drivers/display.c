@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "screen.h"
+#include "display.h"
 #include "../cpu/ports.h"
 #include "../lib/mem.h"
 #include "../lib/string.h"
@@ -15,6 +15,13 @@ int get_offset_col(int offset);
 /**********************************************************
  * Public Kernel API functions                            *
  **********************************************************/
+
+void display_init()
+{
+  display_clear();
+
+  kprint("Display initialized...\n");
+}
 
 /**
  * Print a message on the specified location
@@ -217,7 +224,7 @@ void set_cursor_offset(int offset)
   port_byte_write(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
 }
 
-void clear_screen()
+void display_clear()
 {
   int screen_size = MAX_COLS * MAX_ROWS;
   char *screen = (char *)VIDEO_ADDRESS;

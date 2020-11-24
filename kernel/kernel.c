@@ -1,6 +1,6 @@
 #include "kernel.h"
 #include "../cpu/isr.h"
-#include "../drivers/screen.h"
+#include "../drivers/display.h"
 #include "../drivers/ata.h"
 #include "../drivers/rtc.h"
 #include "../lib/string.h"
@@ -8,17 +8,15 @@
 
 void _start()
 {
+  display_init();
   // TODO: get kernel base/end from bootloader
   memory_init(0x10000);
-  memory_print_info();
-
-  clear_screen();
-
   isr_init();
   irq_init();
   rtc_init();
 
-  kprint("You can type following commands: \n"
+  kprint("----------------------------------\n"
+         "You can type following commands: \n\n"
          "- END to halt the CPU\n"
          "- ALLOC to request a memory from malloc()\n"
          "- READ to read a data from disk\n"

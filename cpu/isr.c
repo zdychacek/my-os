@@ -1,7 +1,7 @@
 #include "isr.h"
 #include "idt.h"
 #include "../cpu/ports.h"
-#include "../drivers/screen.h"
+#include "../drivers/display.h"
 #include "../drivers/pic.h"
 #include "../drivers/keyboard.h"
 #include "../cpu/timer.h"

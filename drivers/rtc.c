@@ -1,5 +1,5 @@
 #include "rtc.h"
-#include "../drivers/screen.h"
+#include "../drivers/display.h"
 #include "../cpu/ports.h"
 
 uint8_t bcd_decimal(uint8_t hex)

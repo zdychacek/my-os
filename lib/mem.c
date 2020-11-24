@@ -1,5 +1,5 @@
 #include "mem.h"
-#include "../drivers/screen.h"
+#include "../drivers/display.h"
 #include "../lib/function.h"
 
 uint32_t last_alloc = 0;
@@ -15,7 +15,7 @@ void memory_init(uint32_t kernel_end)
 
   memset((char *)heap_begin, 0, heap_end - heap_begin);
 
-  kprintf("Kernel heap starts at 0x%x\n", last_alloc);
+  kprintf("Memory initialized. Kernel heap starts at 0x%x...\n", last_alloc);
 }
 
 void memory_print_info()

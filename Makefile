@@ -10,7 +10,7 @@ GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 
 # First rule is run by default
-os-image.bin: boot/bootsect.bin kernel.bin
+os-image.bin: boot/boot.bin kernel.bin
 	cat $^ > os-image.bin
 	# append a few empty sectors at the end of image
 	dd if=/dev/zero bs=512 count=50 2> /dev/null | cat >> os-image.bin
