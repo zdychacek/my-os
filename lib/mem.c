@@ -2,6 +2,8 @@
 #include "../drivers/display.h"
 #include "../lib/function.h"
 
+#define PREALLOC_BYTES 4
+
 uint32_t last_alloc = 0;
 uint32_t heap_begin = 0;
 uint32_t heap_end = 0;
@@ -9,13 +11,13 @@ uint32_t memory_used = 0;
 
 void memory_init(uint32_t kernel_end)
 {
-  last_alloc = kernel_end + 0x1000;
+  last_alloc = kernel_end;
   heap_begin = last_alloc;
-  heap_end = 0x400000;
+  heap_end = kernel_end + 0x400000;
 
   memset((char *)heap_begin, 0, heap_end - heap_begin);
 
-  kprintf("Memory initialized. Kernel heap starts at 0x%x...\n", last_alloc);
+  kprintf("Memory initialized. Kernel heap starts at 0x%x.\n", last_alloc);
 }
 
 void memory_print_info()
@@ -52,7 +54,7 @@ void *malloc(size_t size)
     {
       mem += a->size;
       mem += sizeof(alloc_t);
-      //mem += 4;
+      mem += PREALLOC_BYTES;
 
       continue;
     }
@@ -77,7 +79,7 @@ void *malloc(size_t size)
 		 */
     mem += a->size;
     mem += sizeof(alloc_t);
-    //mem += 4;
+    mem += PREALLOC_BYTES;
   }
 
 nalloc:;

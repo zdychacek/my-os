@@ -8,4 +8,4 @@
 #define PIT_COMMAND 0x43
 #define PIT_REPEATING_MODE 0x36
 
-void init_timer(uint32_t freq);
+void timer_init(uint32_t freq);

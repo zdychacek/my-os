@@ -5,10 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch with GDB",
+      "name": "Kernel",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/kernel.bin",
+      "program": "${workspaceRoot}/bin/boot.img",
       "cwd": "${workspaceRoot}",
       "args": [],
       "targetArchitecture": "x86",
@@ -21,8 +21,12 @@
           "description": "Connect to QEMU remote debugger"
         },
         {
-          "text": "symbol-file ${workspaceRoot}/kernel.elf",
-          "description": "Use Symbol File"
+          "text": "add-symbol-file ${workspaceRoot}/bin/stage2.elf",
+          "description": "Add Bootloader Symbol File"
+        },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/bin/kernel.elf",
+          "description": "Use Kernel Symbol File"
         }
       ],
       "setupCommands": [

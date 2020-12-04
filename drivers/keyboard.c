@@ -3,8 +3,8 @@
 #include "../cpu/isr.h"
 #include "display.h"
 #include "../lib/string.h"
-#include "../lib/function.h"
 #include "../kernel/kernel.h"
+#include "../common/common.h"
 
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
@@ -53,8 +53,9 @@ static void keyboard_callback(registers_t *regs)
   UNUSED(regs);
 }
 
-void init_keyboard()
+void keyboard_init()
 {
   register_interrupt_handler(IRQ1, keyboard_callback);
-  kprint("Keyboard initialized...\n");
+
+  kprint("Keyboard initialized.\n");
 }

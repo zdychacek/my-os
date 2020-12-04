@@ -3,31 +3,54 @@
 #include "../drivers/display.h"
 #include "../drivers/ata.h"
 #include "../drivers/rtc.h"
+#include "../drivers/keyboard.h"
+#include "../drivers/timer.h"
 #include "../lib/string.h"
 #include "../lib/mem.h"
+#include "../common/common.h"
 
-void _start()
+extern uint32_t kernel_start;
+extern uint32_t kernel_end;
+
+void kernel_main(mmap *mem_map)
 {
+  UNUSED(mem_map);
+
   display_init();
-  // TODO: get kernel base/end from bootloader
-  memory_init(0x10000);
+  memory_init((uint32_t)&kernel_end);
   isr_init();
   irq_init();
+  timer_init(50);
+  keyboard_init();
   rtc_init();
 
-  kprint("----------------------------------\n"
-         "You can type following commands: \n\n"
-         "- END to halt the CPU\n"
-         "- ALLOC to request a memory from malloc()\n"
-         "- READ to read a data from disk\n"
-         "- TIME to print current date\n"
-         "- MEM to print memory info\n"
-         "> ");
+  kprintf("Kernel starts at 0x%x, ends at 0x%x.\n\n", &kernel_start, &kernel_end);
+
+  kprint("   _____            ________     _________\n"
+         "  /     \\   ___.__. \\_____  \\   /   _____/\n"
+         " /  \\ /  \\ <   |  |  /   |   \\  \\_____  \\ \n"
+         "/    Y    \\ \\___  | /    |    \\ /        \\ \n"
+         "\\____|__  / / ____| \\_______  //_______  /\n"
+         "        \\/  \\/              \\/         \\/ \n");
+
+  kprint("\nType command or HELP: \n> ");
+
+  for (;;)
+    ;
 }
 
 void user_input(char *input)
 {
-  if (strcmp(input, "END") == 0)
+  if (strcmp(input, "HELP") == 0)
+  {
+    kprint("\nYou can type following commands: \n\n"
+           "- END to halt the CPU\n"
+           "- ALLOC to request a memory from malloc()\n"
+           "- READ to read a data from disk\n"
+           "- TIME to print current date\n"
+           "- MEM to print memory info\n");
+  }
+  else if (strcmp(input, "END") == 0)
   {
     kprint("Stopping the CPU. Bye!\n");
     asm volatile("hlt");
@@ -59,6 +82,10 @@ void user_input(char *input)
   else if (strcmp(input, "MEM") == 0)
   {
     memory_print_info();
+  }
+  else
+  {
+    kprintf("Unknown command \"%s\".\n", input);
   }
 
   kprint("\n> ");

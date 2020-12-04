@@ -1,52 +1,76 @@
 C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c lib/*.c)
 HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h lib/*.h)
-# Nice syntax for file extension replacement
 OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o}
+
+# TODO: autogenerate
+COBJS_BOOTLOADER = boot/stage2/main.o \
+			boot/stage2/ext2.o \
+			boot/stage2/lib.o \
+			boot/stage2/vga.o \
+			boot/stage2/bootconfig.o \
+			boot/stage2/elf.o
 
 # Change this if your cross-compiler is somewhere else
 CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
-# -g: Use debugging symbols in gcc
+LD = /usr/local/i386elfgcc/bin/i386-elf-ld
+QEMU = qemu-system-i386
+AS = nasm
+EXT2UTIL= ../ext2util/ext2util
 CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+DISK = bin/boot.img
 
-# First rule is run by default
-os-image.bin: boot/boot.bin kernel.bin
-	cat $^ > os-image.bin
-	# append a few empty sectors at the end of image
-	dd if=/dev/zero bs=512 count=50 2> /dev/null | cat >> os-image.bin
+run: image emu
+debug: image emu-debug
+gdb: image emu-gdb
 
-# '--oformat binary' deletes all symbols as a collateral, so we don't need
-# to 'strip' them manually on this case
-kernel.bin: boot/kernel_entry.o ${OBJ}
-	i386-elf-ld -o $@ -Ttext 0x1000 $^ --oformat binary
+stage1.bin: $(COBJS_BOOTLOADER)
+	$(AS) -f bin boot/boot.asm -o bin/$@
 
-# Used for debugging purposes
-kernel.elf: boot/kernel_entry.o ${OBJ}
-	i386-elf-ld -o $@ -Ttext 0x1000 $^
+stage2.bin: $(COBJS_BOOTLOADER)
+	$(LD) -T boot/stage2/link.ld -o bin/$@ $(COBJS_BOOTLOADER) --oformat binary
 
-run: os-image.bin
-	qemu-system-i386 -drive file=os-image.bin,format=raw,index=0,media=disk
+stage2.elf: $(COBJS_BOOTLOADER)
+	$(LD) -T boot/stage2/link.ld -o bin/$@ $(COBJS_BOOTLOADER)
 
-# Open the connection to qemu and load our kernel-object file with symbols
-debug: os-image.bin kernel.elf
-	qemu-system-i386 -s -drive file=os-image.bin,format=raw,index=0,media=disk &
-	${GDB} -ex "target remote localhost:1234" -ex "symbol-file kernel.elf"
+kernel.elf: $(OBJ)
+	$(LD) -T kernel/link.ld -o bin/$@ $^
 
-# Open the connection to qemu and load our kernel-object file with symbols
-run-debug: os-image.bin kernel.elf
-	qemu-system-i386 -s -S -drive file=os-image.bin,format=raw,index=0,media=disk
+image: stage1.bin stage2.bin kernel.elf boot.conf
+	dd if=/dev/zero of=$(DISK) bs=1k count=32k
+	mke2fs $(DISK)
 
-# Generic rules for wildcards
-# To make an object, always compile from its .c
-%.o: %.c ${HEADERS}
-	${CC} ${CFLAGS} -ffreestanding -c $< -o $@
+	dd if=bin/stage1.bin of=$(DISK) conv=notrunc
+
+	$(EXT2UTIL) -x $(DISK) -wf bin/stage2.bin -i 5
+	$(EXT2UTIL) -x $(DISK) -wf boot.conf
+
+	# TODO: fix ext2util
+	sudo fuse-ext2 $(DISK) ~/mount -o rw+
+	sudo cp bin/kernel.elf ~/mount/kernel
+	sudo umount ~/mount
+
+	$(EXT2UTIL) -x $(DISK) -l
+
+emu:
+	$(QEMU) -hdb $(DISK)
+
+emu-gdb: kernel.elf stage2.elf
+	$(QEMU) -s -S -hdb $(DISK) &
+	$(GDB) -ex "target remote localhost:1234" -ex "add-symbol-file bin/kernel.elf" -ex "add-symbol-file bin/stage2.elf"
+
+emu-debug: kernel.elf stage2.elf
+	$(QEMU) -s -S -hdb $(DISK)
+
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -ffreestanding -c $< -o $@
 
 %.o: %.asm
-	nasm $< -f elf -o $@
+	$(AS) $< -f elf -o $@
 
 %.bin: %.asm
-	nasm $< -f bin -o $@
+	$(AS) $< -f bin -o $@
 
 clean:
-	rm -rf *.bin *.dis *.o os-image.bin *.elf
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o lib/*.o
+	rm -rf *.bin *.dis *.o
+	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o lib/*.o boot/*.o boot/stage2/*.o bin/*.elf bin/*.bin bin/*.img

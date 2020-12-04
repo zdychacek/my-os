@@ -20,7 +20,7 @@ void display_init()
 {
   display_clear();
 
-  kprint("Display initialized...\n");
+  kprint("Display initialized.\n");
 }
 
 /**

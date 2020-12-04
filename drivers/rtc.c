@@ -76,5 +76,5 @@ void rtc_print_time()
 
 void rtc_init()
 {
-  kprintf("RTC initialized...\n");
+  kprintf("RTC initialized.\n");
 }

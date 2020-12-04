@@ -1,7 +1,8 @@
 #include "timer.h"
-#include "isr.h"
-#include "ports.h"
-#include "../lib/function.h"
+#include "../cpu/isr.h"
+#include "../cpu/ports.h"
+#include "../drivers/display.h"
+#include "../common/common.h"
 
 uint32_t tick = 0;
 
@@ -11,7 +12,7 @@ static void timer_callback(registers_t *regs)
   UNUSED(regs);
 }
 
-void init_timer(uint32_t freq)
+void timer_init(uint32_t freq)
 {
   // Install the function we just wrote
   register_interrupt_handler(IRQ0, timer_callback);
@@ -25,4 +26,6 @@ void init_timer(uint32_t freq)
   port_byte_write(PIT_COMMAND, PIT_REPEATING_MODE);
   port_byte_write(PIT_DATA_0, low);
   port_byte_write(PIT_DATA_0, high);
+
+  kprintf("Timer initialized at frequency %d Hz.\n", freq);
 }

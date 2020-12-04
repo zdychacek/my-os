@@ -2,3 +2,5 @@
 *.bin
 *.elf
 .DS_Store
+*.img
+*.debug

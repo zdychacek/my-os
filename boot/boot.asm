@@ -1,60 +1,72 @@
-[org 0x7c00]
-  KERNEL_OFFSET equ 0x1000 ; The same one we used when linking the kernel
-  KERNEL_SECTORS_COUNT equ 50 ; Number of sectiors to load when loading kernel
+;	MEMORY MAP
+; 0x0400 : 0x0500 - memory map info
+; 0x2000 : 0x2??? - VESA controller info
+; 0x3000 :
+; 0x5000 : 0x7200 Stage2 bootloader
+; 0x7C00 : 0x8000 Stage1/1.5 bootloader
 
-  jmp 0x00:boot ; Sets cs to 0.
+[BITS 16]
+[ORG 0x7C00]
 
+GLOBAL boot
+
+; Stage1 is responsible for loading Stage1.5, and mapping video modes
 boot:
-  xor ax, ax ; "XORing" the same register/segment/pointer sets that register/segment/pointer to 0, to we set ax as 0.
-  mov es, ax ; we set ES to 0, because AX has the same value
-  mov ds, ax ; set ds to 0
-  mov ss, ax ; set ss to 0
+	and dl, 0x80 ; 0x80 = hdd, 0x81 = hdd2
+	jz error
 
-  mov bp, 0x7c00 ; Right before the bootloader.
-  mov sp, bp ; we set sp to 0x7C00
+	mov [drive], dl ; BIOS stores drive # in dl
 
-  mov bx, MSG_REAL_MODE
-  call print
-  call print_nl
+	mov bx, stage_oneandhalf ; Load into address of Stage1.5
+	mov [dest], bx
+	call read_disk
 
-  mov [BOOT_DRIVE], dl ; Remember that the BIOS sets us the boot drive in 'dl' on boot
-  call load_kernel ; read the kernel from disk
+	jmp stage_oneandhalf
 
-  call switch_to_pm ; disable interrupts, load GDT,  etc. Finally jumps to 'BEGIN_PM'
-  jmp $ ; Never executed
+error:
+	mov esi, ext2_error
+	call print
+	jmp $
 
-%include "boot/utils/print.asm"
-%include "boot/utils/print_hex.asm"
-%include "boot/utils/disk.asm"
-%include "boot/utils/32bit_print.asm"
-%include "boot/utils/switch_pm.asm"
-%include "boot/gdt.asm"
+%include "boot/stage1/read_disk.asm"
+%include "boot/stage1/print.asm"
 
-[bits 16]
-load_kernel:
-  mov bx, MSG_LOAD_KERNEL
-  call print
-  call print_nl
+ext2_success      db 13, "EXT2 Magic Header Good!", 10, 0
+ext2_error			  db 13, "EXT2 superblock not found", 10, 0
+stageonepointfive db 13, "Stage1.5 loaded!", 10, 0
+drive				      db 0
 
-  mov bx, KERNEL_OFFSET ; Read from disk and store in 0x1000
-  mov dh, KERNEL_SECTORS_COUNT
-  mov dl, [BOOT_DRIVE]
-  call disk_load
-  ret
+times 510-($-$$) db 0           ; Fill up the file with zeros
+dw 0AA55h                       ; Last 2 bytes = Boot sector identifyer
 
-[bits 32]
-begin_pm:
-  mov ebx, MSG_PROT_MODE
-  call print_string_pm
-  call KERNEL_OFFSET ; Give control to the kernel
-  jmp $ ; Stay here when the kernel returns control to us (if ever)
+;==============================================================================
+; END 	LBA SECTOR 0.
+;
+; We are now out of the zone loaded by the BIOS
+; However, Stage1 contains some useful functions that we can continue
+; to use, since Stage1.5 is directly loaded at the end of stage1 (0x7E00)
+;
+; Stage1.5 mainly focuses on parsing ext2 data to find the blocks used for
+; inode #5, which is reserved by ext2 specific for bootloaders - and we have
+; placed the Stage2 loaded there. Memory mapping function is also placed here
+;
+; BEGIN 	LBA SECTOR 1
+;==============================================================================
+%include "boot/stage1/stage_oneandhalf.asm"
+%include "boot/stage1/memory_map.asm"
+%include "boot/stage1/read_stagetwo.asm"
+%include "boot/stage1/enter_pm.asm"
+%include "boot/stage1/gdt.asm"
 
+times 1024-($-$$) db 0
 
-BOOT_DRIVE db 0 ; It is a good idea to store it in memory because 'dl' may get overwritten
-MSG_REAL_MODE db "Started in 16-bit Real Mode", 0
-MSG_PROT_MODE db "Landed in 32-bit Protected Mode", 0
-MSG_LOAD_KERNEL db "Loading kernel into memory", 0
-
-; padding
-times 510 - ($-$$) db 0
-dw 0xaa55
+;==============================================================================
+; END 	LBA SECTOR 1.
+;
+; We can use the end of the file for a convenient label
+; Superblock starts at LBA 2, which is the end of this
+; sector
+;
+; BEGIN 	LBA SECTOR 2
+;==============================================================================
+superblock:
