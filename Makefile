@@ -16,9 +16,9 @@ GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
 LD = /usr/local/i386elfgcc/bin/i386-elf-ld
 QEMU = qemu-system-i386
 AS = nasm
-EXT2UTIL= ../ext2util/ext2util
 CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 DISK = bin/boot.img
+DISK_MOUNT_POINT = ~/mount
 
 run: image emu
 debug: image emu-debug
@@ -42,15 +42,15 @@ image: stage1.bin stage2.bin kernel.elf boot.conf
 
 	dd if=bin/stage1.bin of=$(DISK) conv=notrunc
 
-	$(EXT2UTIL) -x $(DISK) -wf bin/stage2.bin -i 5
-	$(EXT2UTIL) -x $(DISK) -wf boot.conf
+	fuse-ext2 $(DISK) $(DISK_MOUNT_POINT) -o rw+
 
-	# TODO: fix ext2util
-	sudo fuse-ext2 $(DISK) ~/mount -o rw+
-	sudo cp bin/kernel.elf ~/mount/kernel
-	sudo umount ~/mount
+	# copy files to the filesystem
+	sudo cp ./bin/stage2.bin $(DISK_MOUNT_POINT)
+	sudo cp ./bin/kernel.elf $(DISK_MOUNT_POINT)/kernel
+	sudo cp boot.conf $(DISK_MOUNT_POINT)
 
-	$(EXT2UTIL) -x $(DISK) -l
+	ls -al $(DISK_MOUNT_POINT)
+	umount -f $(DISK_MOUNT_POINT)
 
 emu:
 	$(QEMU) -hdb $(DISK)
