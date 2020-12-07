@@ -8,7 +8,7 @@
       "name": "Kernel",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/bin/boot.img",
+      "program": "${workspaceRoot}/release/boot.img",
       "cwd": "${workspaceRoot}",
       "args": [],
       "targetArchitecture": "x86",
@@ -21,15 +21,15 @@
           "description": "Connect to QEMU remote debugger"
         },
         {
-          "text": "add-symbol-file ${workspaceRoot}/bin/stage1.elf",
+          "text": "add-symbol-file ${workspaceRoot}/debug/stage1.sym",
           "description": "Add Bootloader Stage 1 Symbol File"
         },
         {
-          "text": "add-symbol-file ${workspaceRoot}/bin/stage2.elf",
+          "text": "add-symbol-file ${workspaceRoot}/debug/stage2.sym",
           "description": "Add Bootloader Stage 2 Symbol File"
         },
         {
-          "text": "add-symbol-file ${workspaceRoot}/bin/kernel.elf",
+          "text": "add-symbol-file ${workspaceRoot}/debug/kernel.sym",
           "description": "Use Kernel Symbol File"
         }
       ],

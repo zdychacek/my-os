@@ -1,6 +1,5 @@
-*.o
-*.bin
-*.elf
 .DS_Store
-*.img
-*.debug
+obj/
+debug/
+release/
+mount/

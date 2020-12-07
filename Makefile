@@ -1,82 +1,137 @@
-C_SOURCES = $(wildcard kernel/*.c drivers/*.c cpu/*.c lib/*.c)
-HEADERS = $(wildcard kernel/*.h drivers/*.h cpu/*.h lib/*.h)
-OBJ = ${C_SOURCES:.c=.o cpu/interrupt.o}
 
-# TODO: autogenerate
-COBJS_BOOTLOADER = boot/stage2/main.o \
-			boot/stage2/ext2.o \
-			boot/stage2/lib.o \
-			boot/stage2/vga.o \
-			boot/stage2/bootconfig.o \
-			boot/stage2/elf.o
+#  https://stackoverflow.com/questions/30573481/path-include-and-src-directory-makefile/30602701
 
-# Change this if your cross-compiler is somewhere else
-CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
-GDB = /usr/local/i386elfgcc/bin/i386-elf-gdb
-LD = /usr/local/i386elfgcc/bin/i386-elf-ld
-QEMU = qemu-system-i386
-AS = nasm
-CFLAGS = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
-DISK = bin/boot.img
-DISK_MOUNT_POINT = ~/mount
-BOOTLOADER_STAGE1_POSITION = 0x7c00
+SRC_DIR := src
+INC_DIR := include
+OBJ_DIR := obj
+RELEASE_DIR := release
+DEBUG_DIR := debug
+DEBUG_SYMBOL_EXT := sym
+BINARY_EXT := bin
 
-run: image emu
-debug: image emu-debug
-gdb: image emu-gdb
+CC := i386-elf-gcc
+LD := i386-elf-ld
+STRIP := i386-elf-strip
+AS := nasm
+QEMU := qemu-system-i386
+GDB = i386-elf-gdb
+CFLAGS := -I$(INC_DIR) -MMD -MP -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+STRIPFLAGS := --only-keep-debug
 
-stage1.bin: $(COBJS_BOOTLOADER)
-	$(AS) -f elf -F dwarf -g boot/boot.asm -o bin/stage1.o
-	$(LD) -Ttext=$(BOOTLOADER_STAGE1_POSITION) --oformat binary -o bin/stage1.bin bin/stage1.o
+OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+BOOT_SRC_DIR := $(SRC_DIR)/arch-x86/boot
 
-stage1.elf: $(COBJS_BOOTLOADER)
-	$(AS) -f elf -F dwarf -g boot/boot.asm -o bin/stage1.o
-	$(LD) -Ttext=$(BOOTLOADER_STAGE1_POSITION) -o bin/stage1.elf bin/stage1.o
+# BOOTLOADER STAGE 1
+BOOT_STAGE1_FILE := stage1
+BOOT_STAGE1_SYMBOL_FILE = $(DEBUG_DIR)/$(BOOT_STAGE1_FILE).$(DEBUG_SYMBOL_EXT)
+BOOT_STAGE1_RELEASE_FILE = $(RELEASE_DIR)/$(BOOT_STAGE1_FILE).$(BINARY_EXT)
+BOOT_STAGE1_SRC_ASM := $(wildcard $(BOOT_SRC_DIR)/*.asm)
+BOOT_STAGE1_OBJ := $(BOOT_STAGE1_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+BOOT_STAGE1_POSITION := 0x7c00
 
-stage2.bin: $(COBJS_BOOTLOADER)
-	$(LD) -T boot/stage2/link.ld -o bin/$@ $(COBJS_BOOTLOADER) --oformat binary
+# BOOTLOADER STAGE 2
+BOOT_STAGE2_FILE := stage2
+BOOT_STAGE2_SYMBOL_FILE := $(DEBUG_DIR)/$(BOOT_STAGE2_FILE).$(DEBUG_SYMBOL_EXT)
+BOOT_STAGE2_RELEASE_FILE := $(RELEASE_DIR)/$(BOOT_STAGE2_FILE).$(BINARY_EXT)
+BOOT_STAGE2_SRC_DIR := $(BOOT_SRC_DIR)/stage2
+BOOT_STAGE2_SRC_ASM := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.asm)
+BOOT_STAGE2_SRC_C := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.c)
+BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
+				$(BOOT_STAGE2_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/link.ld
+BOOT_STAGE2_LINK = $(LD) -T $(BOOT_STAGE2_LINK_FILE) -o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
 
-stage2.elf: $(COBJS_BOOTLOADER)
-	$(LD) -T boot/stage2/link.ld -o bin/$@ $(COBJS_BOOTLOADER)
+# KERNEL
+KERNEL_FILE := kernel
+KERNEL_SYMBOL_FILE := $(DEBUG_DIR)/$(KERNEL_FILE).$(DEBUG_SYMBOL_EXT)
+KERNEL_RELEASE_FILE := $(RELEASE_DIR)/$(KERNEL_FILE).$(BINARY_EXT)
+KERNEL_SRC_SUBDIRS := arch-x86 drivers kernel lib
+KERNEL_SRC_ASM := $(foreach dir,$(KERNEL_SRC_SUBDIRS),$(wildcard $(SRC_DIR)/$(dir)/*.asm))
+KERNEL_SRC_C := $(foreach dir,$(KERNEL_SRC_SUBDIRS),$(wildcard $(SRC_DIR)/$(dir)/*.c))
+KERNEL_OBJ := $(KERNEL_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
+       	$(KERNEL_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+KERNEL_LINK_FILE = $(SRC_DIR)/kernel/link.ld
+KERNEL_LINK = $(LD) -T $(KERNEL_LINK_FILE) -o $@ $^
 
-kernel.elf: $(OBJ)
-	$(LD) -T kernel/link.ld -o bin/$@ $^
+# DISK
+DISK_NAME := boot.img
+DISK := $(RELEASE_DIR)/$(DISK_NAME)
+DISK_MOUNT_DIR := ./mount
 
-image: stage1.bin stage2.bin kernel.elf boot.conf
-	dd if=/dev/zero of=$(DISK) bs=1k count=32k
-	mke2fs $(DISK)
+BOOT_CONF := boot.conf
 
-	dd if=bin/stage1.bin of=$(DISK) conv=notrunc
+DIR_SENTINEL = @mkdir -p $(@D)
 
-	fuse-ext2 $(DISK) $(DISK_MOUNT_POINT) -o rw+
+.PHONY: run gdb dbg clean
 
-	# copy files to the filesystem
-	sudo cp ./bin/stage2.bin $(DISK_MOUNT_POINT)
-	sudo cp ./bin/kernel.elf $(DISK_MOUNT_POINT)/kernel
-	sudo cp boot.conf $(DISK_MOUNT_POINT)
-
-	ls -al $(DISK_MOUNT_POINT)
-	umount -f $(DISK_MOUNT_POINT)
-
-emu:
+run: $(DISK)
 	$(QEMU) -hdb $(DISK)
 
-emu-gdb: stage1.elf stage2.elf kernel.elf
-	$(QEMU) -s -S -hdb $(DISK) &
-	$(GDB) -tui -ex "target remote localhost:1234" -ex "add-symbol-file bin/stage1.elf" -ex "add-symbol-file bin/stage2.elf" -ex "add-symbol-file bin/kernel.elf"
-
-emu-debug: stage1.elf stage2.elf kernel.elf
+dbg: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMBOL_FILE)
 	$(QEMU) -s -S -hdb $(DISK)
 
-%.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -ffreestanding -c $< -o $@
+gdb: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMBOL_FILE)
+	$(QEMU) -s -S -hdb $(DISK) &
+	$(GDB) \
+		-tui \
+		-ex "target remote localhost:1234" \
+		-ex "add-symbol-file $(BOOT_STAGE1_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(BOOT_STAGE2_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(KERNEL_SYMBOL_FILE)"
 
-%.o: %.asm
-	$(AS) $< -f elf -o $@
+# BOOTLOADER STAGE 1
+$(BOOT_STAGE1_RELEASE_FILE): $(BOOT_STAGE1_OBJ) | $(RELEASE_DIR)
+	$(LD) -Ttext=$(BOOT_STAGE1_POSITION) --oformat binary -o $@ $^
 
-%.bin: %.asm
-	$(AS) $< -f bin -o $@
+$(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
+	$(LD) -Ttext=$(BOOT_STAGE1_POSITION) -o $@ $^
+	$(STRIP) $(STRIPFLAGS) $@
+
+# BOOTLOADER STAGE 2
+$(BOOT_STAGE2_RELEASE_FILE): $(BOOT_STAGE2_OBJ) | $(RELEASE_DIR)
+	$(BOOT_STAGE2_LINK) --oformat binary
+
+$(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) | $(DEBUG_DIR)
+	$(BOOT_STAGE2_LINK)
+	$(STRIP) $(STRIPFLAGS) $@
+
+# KERNEL
+$(KERNEL_RELEASE_FILE): $(KERNEL_OBJ) | $(RELEASE_DIR)
+	$(KERNEL_LINK)
+	$(STRIP) $@
+
+$(KERNEL_SYMBOL_FILE): $(KERNEL_OBJ) | $(DEBUG_DIR)
+	$(KERNEL_LINK)
+	$(STRIP) $(STRIPFLAGS) $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | $(OBJ_DIR)
+	$(DIR_SENTINEL)
+	$(AS) $< -g -f elf -o $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(DIR_SENTINEL)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR):
+	@mkdir -p $@
+
+# DISK
+$(DISK): $(DISK_MOUNT_DIR) $(BOOT_CONF) $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE2_RELEASE_FILE) $(KERNEL_RELEASE_FILE)
+	dd if=/dev/zero of=$@ bs=1 count=256k
+	mke2fs $@
+
+	dd if=$(BOOT_STAGE1_RELEASE_FILE) of=$@ conv=notrunc
+
+	fuse-ext2 $@ $(DISK_MOUNT_DIR) -o rw+
+
+	sudo cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	sudo cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	sudo cp $(BOOT_CONF) $(DISK_MOUNT_DIR)
+
+	ls -al $(DISK_MOUNT_DIR)
+	umount -f $(DISK_MOUNT_DIR)
 
 clean:
-	rm -rf *.bin *.dis *.o
-	rm -rf kernel/*.o boot/*.bin drivers/*.o boot/*.o cpu/*.o lib/*.o boot/*.o boot/stage2/*.o bin/*.elf bin/*.bin bin/*.img
+	@rm -rfv $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR)
+
+-include $(OBJ:.o=.d)
