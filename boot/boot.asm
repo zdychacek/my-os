@@ -1,5 +1,4 @@
 ; Boot constants
-%define LOCATION 0x7c00 ; Bootloader location
 %define SECTOR_END 0xaa55 ; Bootsector end signature
 
 ; Characters
@@ -60,12 +59,9 @@
 %define STAGE2_POSITION 0x00050000 ; Loaded Stage 2 position
 
 [BITS 16]
-[ORG LOCATION]
-
-GLOBAL boot
 
 ; Stage 1 is responsible for loading Stage 1.5
-boot:
+_start:
   ; Check LBA support
 	mov ah, DISK_EXT_CHECK
 	mov bx, DISK_EXT_CHECK_SIG1
