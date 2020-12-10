@@ -56,6 +56,7 @@ KERNEL_LINK = $(LD) -T $(KERNEL_LINK_FILE) -o $@ $^
 # DISK
 DISK_NAME := boot.img
 DISK := $(RELEASE_DIR)/$(DISK_NAME)
+DISK_SIZE := 256k
 DISK_MOUNT_DIR := ./mount
 
 BOOT_CONF := boot.conf
@@ -117,7 +118,7 @@ $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR):
 
 # DISK
 $(DISK): $(DISK_MOUNT_DIR) $(BOOT_CONF) $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE2_RELEASE_FILE) $(KERNEL_RELEASE_FILE)
-	dd if=/dev/zero of=$@ bs=1 count=256k
+	dd if=/dev/zero of=$@ bs=1 count=$(DISK_SIZE)
 	mke2fs $@
 
 	dd if=$(BOOT_STAGE1_RELEASE_FILE) of=$@ conv=notrunc
