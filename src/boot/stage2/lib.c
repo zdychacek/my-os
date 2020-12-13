@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "arch-x86/boot/stage2/lib.h"
+#include "boot/stage2/lib.h"
 #include "common/common.h"
 
 // Returns length of a null-terminated string

@@ -2,7 +2,7 @@
 #pragma once
 
 #include "common/common.h"
-#include "arch-x86/boot/stage2/bootconfig.h"
+#include "boot/stage2/bootconfig.h"
 
 #define ELF_MAGIC 0x464C457FU // "\x7FELF" in little endian
 

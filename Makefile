@@ -19,7 +19,7 @@ CFLAGS := -I$(INC_DIR) -MMD -MP -g -ffreestanding -Wall -Wextra -fno-exceptions 
 STRIPFLAGS := --only-keep-debug
 
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-BOOT_SRC_DIR := $(SRC_DIR)/arch-x86/boot
+BOOT_SRC_DIR := $(SRC_DIR)/boot
 
 # BOOTLOADER STAGE 1
 BOOT_STAGE1_FILE := stage1

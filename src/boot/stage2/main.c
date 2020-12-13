@@ -1,8 +1,8 @@
-#include "arch-x86/boot/stage2/elf.h"
-#include "arch-x86/boot/stage2/ext2.h"
-#include "arch-x86/boot/stage2/vga.h"
-#include "arch-x86/boot/stage2/lib.h"
-#include "arch-x86/boot/stage2/bootconfig.h"
+#include "boot/stage2/elf.h"
+#include "boot/stage2/ext2.h"
+#include "boot/stage2/vga.h"
+#include "boot/stage2/lib.h"
+#include "boot/stage2/bootconfig.h"
 #include "common/common.h"
 
 uint32_t HEAP_START = 0x200000;

@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "arch-x86/boot/stage2/vga.h"
+#include "boot/stage2/vga.h"
 
 #define assert(e) ((e) ? (void)0 : vga_pretty_assert(#e, VGA_RED))
 

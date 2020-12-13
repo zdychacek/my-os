@@ -1,7 +1,7 @@
-#include "arch-x86/boot/stage2/lib.h"
-#include "arch-x86/boot/stage2/ext2.h"
-#include "arch-x86/boot/stage2/elf.h"
-#include "arch-x86/boot/stage2/vga.h"
+#include "boot/stage2/lib.h"
+#include "boot/stage2/ext2.h"
+#include "boot/stage2/elf.h"
+#include "boot/stage2/vga.h"
 #include "common/common.h"
 
 extern uint32_t HEAP_START;
