@@ -17,7 +17,7 @@ void memory_init(uint32_t kernel_end)
 
   memset((char *)heap_begin, 0, heap_end - heap_begin);
 
-  kprintf("Memory initialized. Kernel heap starts at 0x%x.\n", last_alloc);
+  kprintf("Memory initialized (heap starts at 0x%x)\n", last_alloc);
 }
 
 void memory_print_info()

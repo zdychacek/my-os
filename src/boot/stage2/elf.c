@@ -76,7 +76,7 @@ void elf_objdump(void *data)
   }
 }
 
-void elf_load(mmap *mem_map, bootconfig *boot_cfg)
+void elf_load(multiboot_info *bootinfo, bootconfig *boot_cfg)
 {
   int kernel_inode = ext2_find_child(boot_cfg->file, 2);
 
@@ -109,7 +109,7 @@ void elf_load(mmap *mem_map, bootconfig *boot_cfg)
     phdr++;
   }
 
-  void (*entry)(mmap *);
+  void (*entry)(unsigned long, multiboot_info *);
   entry = (void (*)(void))(ehdr->e_entry - off);
 
   // CLEAR OUT THE ENTIRE HEAP
@@ -118,5 +118,5 @@ void elf_load(mmap *mem_map, bootconfig *boot_cfg)
 
   printx("entry: ", (uint32_t)entry);
   asm volatile("cli");
-  entry(mem_map);
+  entry(0x2BADB002, bootinfo);
 }

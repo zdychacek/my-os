@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include "common/common.h"
+#include "boot/bootinfo.h"
 #include "boot/stage2/bootconfig.h"
+#include "common/common.h"
 
 #define ELF_MAGIC 0x464C457FU // "\x7FELF" in little endian
 
@@ -95,5 +96,5 @@ typedef struct
 #define STT_SECTION 3
 #define STT_FILE 4
 
-void elf_load(mmap *mem_map, bootconfig *boot_cfg);
+void elf_load(multiboot_info *mem_map, bootconfig *boot_cfg);
 void elf_objdump(void *data);

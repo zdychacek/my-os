@@ -1,3 +1,4 @@
+#include "boot/bootinfo.h"
 #include "kernel/kernel.h"
 #include "arch-x86/isr.h"
 #include "drivers/display.h"
@@ -12,19 +13,42 @@
 extern uint32_t kernel_start;
 extern uint32_t kernel_end;
 
-void kernel_main(mmap *mem_map)
+void kernel_main(unsigned long magic, multiboot_info *mbi)
 {
-  UNUSED(mem_map);
-
   display_init();
+
+  if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
+  {
+    kprintf("Invalid magic number: 0x%x\n", magic);
+    return;
+  }
+
+  kprintf("Multiboot flags = 0x%x\n", mbi->flags);
+
+  if (mbi->flags != MULTIBOOT_FLAGS)
+  {
+    kprintf("Bad multiboot flags (expecting: 0x%x, got: 0x%x)\n", MULTIBOOT_FLAGS, mbi->flags);
+    return;
+  }
+
+  kprintf("Boot device = 0x%x\n", mbi->boot_device);
+
   memory_init((uint32_t)&kernel_end);
   isr_init();
-  irq_init();
   timer_init(50);
   keyboard_init();
   rtc_init();
+  // enable interrupts
+  irq_init();
 
-  kprintf("Kernel starts at 0x%x, ends at 0x%x.\n\n", &kernel_start, &kernel_end);
+  // get memory size in KB
+  uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;
+  char buf[20];
+
+  itoa(phys_memory_avail, buf, 10);
+  kprintf("Physical memory available = %s KB\n", buf);
+
+  kprintf("Kernel begins at 0x%x, ends at 0x%x\n\n", &kernel_start, &kernel_end);
 
   kprint("   _____            ________     _________\n"
          "  /     \\   ___.__. \\_____  \\   /   _____/\n"

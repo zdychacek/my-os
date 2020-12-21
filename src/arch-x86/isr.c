@@ -65,6 +65,8 @@ void isr_init()
   set_idt_gate(47, (uint32_t)irq15);
 
   set_idt(); // Load with ASM
+
+  kprintf("Interrupt Service Routines installed\n");
 }
 
 /* To print the message which defines every exception */
@@ -140,5 +142,5 @@ void irq_init()
   // Enable interruptions
   asm volatile("sti");
 
-  kprintf("Interrupts enabled.\n");
+  kprintf("Interrupts enabled\n");
 }

@@ -2,12 +2,12 @@
 
 #include <stdint.h>
 
-typedef struct _boot_mmap
+typedef struct _memory_region
 {
   uint64_t base;
   uint64_t len;
   uint64_t type;
-} mmap;
+} memory_region;
 
 // Sometimes we want to keep parameters to a function for later use
 // and this is a solution to avoid the 'unused parameter' compiler warning */

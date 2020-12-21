@@ -57,5 +57,5 @@ void keyboard_init()
 {
   register_interrupt_handler(IRQ1, keyboard_callback);
 
-  kprint("Keyboard initialized.\n");
+  kprint("Keyboard initialized\n");
 }

@@ -27,5 +27,5 @@ void timer_init(uint32_t freq)
   port_byte_write(PIT_DATA_0, low);
   port_byte_write(PIT_DATA_0, high);
 
-  kprintf("Timer initialized at frequency %d Hz.\n", freq);
+  kprintf("Timer is ticking at frequency %d Hz\n", freq);
 }
