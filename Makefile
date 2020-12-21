@@ -63,10 +63,12 @@ BOOT_CONF := boot.conf
 
 DIR_SENTINEL = @mkdir -p $(@D)
 
-.PHONY: run gdb dbg clean
+.PHONY: run compile gdb dbg clean
 
 run: $(DISK)
 	$(QEMU) -hdb $(DISK)
+
+compile: $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE2_RELEASE_FILE) $(KERNEL_RELEASE_FILE)
 
 dbg: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMBOL_FILE)
 	$(QEMU) -s -S -hdb $(DISK)
