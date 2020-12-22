@@ -11,10 +11,10 @@
 bits	16
 
 install_gdt:
-	pusha ; save registers
-	lgdt 	[gdt_desc] ; load GDT into GDTR
-	popa ; restore registers
-	ret
+  pusha ; save registers
+  lgdt 	[gdt_desc] ; load GDT into GDTR
+  popa ; restore registers
+  ret
 
 ; GLOBAL DESCRIPTOR TABLE
 gdt: ; Address for the GDT

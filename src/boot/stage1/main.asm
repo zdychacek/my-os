@@ -36,7 +36,7 @@ loader_name_len   equ $ - loader_name
 ; Messages
 stageonepointfive db "Stage1.5 loaded!", NEWLINE, RETURN, NULL
 ext2_success      db "EXT2 Magic Header Good!", NEWLINE, RETURN, NULL
-ext2_error_msg	  db "EXT2 superblock not found", NEWLINE, RETURN, NULL
+ext2_error_msg    db "EXT2 superblock not found", NEWLINE, RETURN, NULL
 disk_error_msg    db "Disk error!", NEWLINE, RETURN, NULL
 lba_error_msg     db "LBA error!", NEWLINE, RETURN, NULL
 found_msg         db "Found stage 2 binary!", NEWLINE, RETURN, NULL
@@ -137,9 +137,9 @@ stage_oneandhalf:
   jmp protected_mode_enter ; Enter protected mode
 
 ; We enter the loop with:
-;	bx = inode pointer
+; bx = inode pointer
 ; cx = # of sectors to read (2 per block)
-;	di = address of first block pointer
+; di = address of first block pointer
 ; No support for indirect pointers.
 inode_load:
   mov ax, [di] ; Set ax = block pointer
@@ -150,7 +150,7 @@ inode_load:
 
   call read_disk
 
-  add bx, 0x400	; 1 kb increase
+  add bx, 0x400 ; 1 kb increase
   add di, 0x4	; Move to next block pointer
   sub cx, 0x2	; Read two blocks
   jnz inode_load
@@ -168,6 +168,7 @@ protected_mode_enter:
   ; Set multiboot info flags
   mov dword [boot_info + multiboot_info.flags], MULTIBOOT_FLAGS
 
+  ; Set boot device
   mov [boot_info + multiboot_info.boot_device], dl
 
   ; Enable a20 line
@@ -212,43 +213,20 @@ protected_mode:
   mov fs, ax
   mov gs, ax
 
-  mov ebp, STACK_POINTER ; Move temp stack pointer to 090000h
+  mov ebp, STACK_POINTER ; Move temp stack pointer to 0x90000
   mov esp, ebp
-
-  push dword boot_info
 
   mov edx, STAGE2_POSITION
   lea ecx, [edx]
   mov	ebx, [boot_info]
-  call ecx ; stage2_main(multiboot_info)
+
+  ; Push multiboot info pointer on the stack
+  push dword boot_info
+  ; Call `stage2_main(multiboot_info)`
+  call ecx
 
 %include "src/boot/stage1/gdt.inc"
 %include "src/boot/stage1/multiboot_info.inc"
-
-boot_info: istruc multiboot_info
-  at multiboot_info.flags, dd 0
-  at multiboot_info.memory_lo, dd 0
-  at multiboot_info.memory_hi, dd 0
-  at multiboot_info.boot_device, dd 0
-  at multiboot_info.cmdLine, dd 0
-  at multiboot_info.mods_count, dd 0
-  at multiboot_info.mods_addr, dd 0
-  at multiboot_info.syms0, dd 0
-  at multiboot_info.syms1, dd 0
-  at multiboot_info.syms2, dd 0
-  at multiboot_info.mmap_length, dd 0
-  at multiboot_info.mmap_addr, dd 0
-  at multiboot_info.drives_length, dd 0
-  at multiboot_info.drives_addr, dd 0
-  at multiboot_info.config_table, dd 0
-  at multiboot_info.bootloader_name, dd 0
-  at multiboot_info.apm_table, dd 0
-  at multiboot_info.vbe_control_info, dd 0
-  at multiboot_info.vbe_mode_info, dw 0
-  at multiboot_info.vbe_interface_seg, dw 0
-  at multiboot_info.vbe_interface_off, dw 0
-  at multiboot_info.vbe_interface_len, dw 0
-iend
 
 times 1024-($-$$) db 0
 

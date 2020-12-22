@@ -1,6 +1,6 @@
 ; Disk Address Packet structure
 struc DAP
-	.packet_size resb	1
+  .packet_size resb	1
   .unused resb 1
   .count resw 1
   .dest_offset resw 1
@@ -10,11 +10,11 @@ struc DAP
 endstruc
 
 packet: istruc DAP
-	at DAP.packet_size,	db 0x10
-	at DAP.unused, db 0
-	at DAP.count, dw 4
-	at DAP.dest_offset, dw 0
-	at DAP.dest_segment, dw 0
+  at DAP.packet_size, db 0x10
+  at DAP.unused, db 0
+  at DAP.count, dw 4
+  at DAP.dest_offset, dw 0
+  at DAP.dest_segment, dw 0
   at DAP.lba_lo, dd 1
   at DAP.lba_hi, dd 0
 iend
