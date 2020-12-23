@@ -48,7 +48,7 @@ BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/link.ld
 BOOT_STAGE2_LINK = $(LD) -T $(BOOT_STAGE2_LINK_FILE) -o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
 
 # LIBRARY
-LIB_FILE := libstdlib
+LIB_FILE := libstd
 LIB_SYMBOL_FILE := $(RELEASE_DIR)/$(LIB_FILE).$(DEBUG_SYMBOL_EXT)
 LIB_RELEASE_FILE := $(RELEASE_DIR)/$(LIB_FILE).a
 LIB_SRC_DIR := $(SRC_DIR)/lib
@@ -65,7 +65,12 @@ KERNEL_SRC_C := $(wildcard $(KERNEL_SRC_DIR)/*.c) $(wildcard $(KERNEL_SRC_DIR)/*
 KERNEL_OBJ := $(KERNEL_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
        	$(KERNEL_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
 KERNEL_LINK_FILE = $(KERNEL_SRC_DIR)/kernel.ld
-KERNEL_LINK = $(LD) -T $(KERNEL_LINK_FILE) -L$(RELEASE_DIR) -lstdlib -o $@ $^
+
+KERNEL_LINK = $(LD) \
+	-T $(KERNEL_LINK_FILE) \
+	-L$(RELEASE_DIR) \
+	-l$(subst lib,,$(LIB_FILE)) \
+	-o $@ $^
 
 # DISK
 DISK_NAME := boot.img

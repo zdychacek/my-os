@@ -225,13 +225,8 @@ protected_mode:
   ; Call `stage2_main(multiboot_info)`
   call ecx
 
-<<<<<<< HEAD:src/boot/stage1/main.asm
-%include "src/boot/stage1/gdt.inc"
-%include "src/boot/stage1/multiboot_info.inc"
-=======
 %include "src/bootloader/stage1/gdt.inc"
 %include "src/bootloader/stage1/multiboot_info.inc"
->>>>>>> lib:src/bootloader/stage1/main.asm
 
 times 1024-($-$$) db 0
 
