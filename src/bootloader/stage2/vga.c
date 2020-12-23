@@ -1,7 +1,7 @@
 
 #include "bootloader/stage2/vga.h"
 #include "bootloader/stage2/lib.h"
-#include "common/common.h"
+#include "lib/string.h"
 
 int current_x = 0;
 int current_y = 0;
@@ -62,7 +62,7 @@ void vga_scroll()
 
 void vga_overwrite_color(int color, int start_x, int start_y, int end_x, int end_y)
 {
-  UNUSED(end_y);
+  unused(end_y);
 
   char *vga_address = VGA_MEMORY;
   int sizeend = 2 * end_x + (160 * start_y);
@@ -99,7 +99,7 @@ void vga_puts(char *s)
   while (*s != 0)
   {
     vga_putc(*s);
-    UNUSED(*s++);
+    unused(*s++);
   }
 }
 
@@ -168,7 +168,9 @@ void vga_pretty_assert(char *s, int color)
 
 void printx(char *msg, uint32_t i)
 {
+  char buf[32];
+
   vga_puts(msg);
-  vga_puts(itoa(i, 16));
+  vga_puts(itoa(i, buf, 16));
   vga_putc('\n');
 }

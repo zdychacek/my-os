@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stddef.h>
-#include <stdint.h>
+#include "lib/types.h"
+#include "lib/types.h"
 
 typedef struct _alloc_t
 {
@@ -13,5 +13,5 @@ typedef struct _alloc_t
 void memory_init(uint32_t kernel_end);
 void memory_print_info();
 
-void *malloc(size_t size);
-void free(void *mem);
+void *kmalloc(size_t size);
+void kfree(void *mem);

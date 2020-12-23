@@ -1,11 +1,10 @@
 #pragma once
 
-// TODO(ondrej): replace with own type defs
-#include <stdint.h>
+#include "lib/types.h"
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
-typedef struct multiboot_info
+typedef struct _multiboot_info
 {
   uint32_t flags;
   uint32_t memory_lo;
@@ -30,6 +29,13 @@ typedef struct multiboot_info
   uint32_t vbe_interface_addr;
   uint16_t vbe_interface_len;
 } multiboot_info;
+
+typedef struct _memory_region
+{
+  uint64_t base;
+  uint64_t len;
+  uint64_t type;
+} memory_region;
 
 // Multiboot flags
 #define MULTIBOOT_FLAGS_MEM 1

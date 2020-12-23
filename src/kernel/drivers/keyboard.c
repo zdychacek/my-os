@@ -4,7 +4,6 @@
 #include "kernel/drivers/display.h"
 #include "kernel/main.h"
 #include "lib/string.h"
-#include "common/common.h"
 
 #define BACKSPACE 0x0E
 #define ENTER 0x1C
@@ -50,7 +49,7 @@ static void keyboard_callback(registers_t *regs)
     append(key_buffer, letter);
     kprint(str);
   }
-  UNUSED(regs);
+  unused(regs);
 }
 
 void keyboard_init()

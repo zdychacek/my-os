@@ -2,7 +2,8 @@
 #include "bootloader/stage2/ext2.h"
 #include "bootloader/stage2/elf.h"
 #include "bootloader/stage2/vga.h"
-#include "common/common.h"
+#include "lib/string.h"
+#include "lib/memory.h"
 
 extern uint32_t HEAP_START;
 
@@ -22,18 +23,20 @@ void elf_objdump(void *data)
   elf32_phdr *last_phdr = (elf32_phdr *)((uint32_t)phdr + (ehdr->e_phentsize * ehdr->e_phnum));
   vga_pretty("Offset   \tVirt Addr\tPhys Addr\tFile Sz\tMem sz \tAlign  \n", VGA_LIGHTMAGENTA);
 
+  char buf[32];
+
   while (phdr < last_phdr)
   {
     vga_puts("   ");
-    vga_puts(itoa(phdr->p_offset, 16));
+    vga_puts(itoa(phdr->p_offset, buf, 16));
     vga_puts("\t");
-    vga_puts(itoa(phdr->p_vaddr, 16));
+    vga_puts(itoa(phdr->p_vaddr, buf, 16));
     vga_putc('\t');
-    vga_puts(itoa(phdr->p_paddr, 16));
+    vga_puts(itoa(phdr->p_paddr, buf, 16));
     vga_putc('\t');
-    vga_puts(itoa(phdr->p_filesz, 10));
+    vga_puts(itoa(phdr->p_filesz, buf, 10));
     vga_putc('\t');
-    vga_puts(itoa(phdr->p_memsz, 16));
+    vga_puts(itoa(phdr->p_memsz, buf, 16));
     vga_putc('\t');
     vga_putc('\n');
 
@@ -54,7 +57,7 @@ void elf_objdump(void *data)
 
   while (shdr < last_shdr)
   {
-    vga_puts(itoa(++q, 10));
+    vga_puts(itoa(++q, buf, 10));
     vga_puts("  ");
     vga_puts(string_table + shdr->sh_name);
 
@@ -63,13 +66,13 @@ void elf_objdump(void *data)
       vga_puts("\t");
     }
     vga_putc('\t');
-    vga_puts(itoa(shdr->sh_size, 16));
+    vga_puts(itoa(shdr->sh_size, buf, 16));
     vga_putc('\t');
-    vga_puts(itoa(shdr->sh_addr, 16));
+    vga_puts(itoa(shdr->sh_addr, buf, 16));
     vga_putc('\t');
-    vga_puts(itoa(shdr->sh_offset, 10));
+    vga_puts(itoa(shdr->sh_offset, buf, 10));
     vga_putc('\t');
-    vga_puts(itoa(shdr->sh_addralign, 16));
+    vga_puts(itoa(shdr->sh_addralign, buf, 16));
     vga_putc('\n');
 
     shdr++;

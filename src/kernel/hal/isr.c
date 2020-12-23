@@ -7,8 +7,6 @@
 
 isr_t interrupt_handlers[256];
 
-/* Can't do this with a loop because we need the address
- * of the function names */
 void isr_init()
 {
   set_idt_gate(0, (uint32_t)isr0);
@@ -66,7 +64,7 @@ void isr_init()
 
   set_idt(); // Load with ASM
 
-  kprintf("Interrupt Service Routines installed\n");
+  kprint("Interrupt Service Routines installed\n");
 }
 
 /* To print the message which defines every exception */
@@ -142,5 +140,5 @@ void irq_init()
   // Enable interruptions
   asm volatile("sti");
 
-  kprintf("Interrupts enabled\n");
+  kprint("Interrupts enabled\n");
 }

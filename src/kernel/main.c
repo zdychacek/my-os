@@ -7,7 +7,6 @@
 #include "kernel/drivers/ata.h"
 #include "kernel/drivers/keyboard.h"
 #include "kernel/memory/heap.h"
-#include "common/common.h"
 #include "lib/string.h"
 #include "lib/memory.h"
 
@@ -82,13 +81,13 @@ void user_input(char *input)
   }
   else if (strcmp(input, "ALLOC") == 0)
   {
-    char *data = (char *)malloc(16);
+    char *data = (char *)kmalloc(16);
 
-    free(data);
+    kfree(data);
   }
   else if (strcmp(input, "READ") == 0)
   {
-    uint32_t *data = (uint32_t *)malloc(sizeof(uint32_t) * 128);
+    uint32_t *data = (uint32_t *)kmalloc(sizeof(uint32_t) * 128);
 
     // read the first sector from the disk
     read_sectors_ATA_PIO(data, 0, 1);
@@ -98,7 +97,7 @@ void user_input(char *input)
     kprintf("%x ", (data[127] >> 16) & 0xFF);
     kprintf("%x\n", (data[127] >> 24) & 0xFF);
 
-    free(data);
+    kfree(data);
   }
   else if (strcmp(input, "TIME") == 0)
   {

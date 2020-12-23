@@ -1,6 +1,6 @@
-#include <stdint.h>
 #include "kernel/drivers/display.h"
 #include "kernel/hal/ports.h"
+#include "lib/types.h"
 #include "lib/memory.h"
 #include "lib/string.h"
 
@@ -21,6 +21,19 @@ void display_init()
   display_clear();
 
   kprint("Display initialized\n");
+}
+
+void display_clear()
+{
+  int screen_size = MAX_COLS * MAX_ROWS;
+  char *screen = (char *)VIDEO_ADDRESS;
+
+  for (int i = 0; i < screen_size; i++)
+  {
+    screen[i * 2] = ' ';
+    screen[i * 2 + 1] = WHITE_ON_BLACK;
+  }
+  set_cursor_offset(get_offset(0, 0));
 }
 
 /**
@@ -222,19 +235,6 @@ void set_cursor_offset(int offset)
   port_byte_write(REG_SCREEN_DATA, (unsigned char)(offset >> 8));
   port_byte_write(REG_SCREEN_CTRL, 15);
   port_byte_write(REG_SCREEN_DATA, (unsigned char)(offset & 0xff));
-}
-
-void display_clear()
-{
-  int screen_size = MAX_COLS * MAX_ROWS;
-  char *screen = (char *)VIDEO_ADDRESS;
-
-  for (int i = 0; i < screen_size; i++)
-  {
-    screen[i * 2] = ' ';
-    screen[i * 2 + 1] = WHITE_ON_BLACK;
-  }
-  set_cursor_offset(get_offset(0, 0));
 }
 
 int get_offset(int col, int row) { return 2 * (row * MAX_COLS + col); }

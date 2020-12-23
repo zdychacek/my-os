@@ -1,6 +1,6 @@
 #pragma once
 
-typedef struct
+typedef struct _bootconfig
 {
   char *file;
 } bootconfig;

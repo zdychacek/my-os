@@ -1,4 +1,4 @@
-#include <stdint.h>
+#include "lib/types.h"
 #include "kernel/drivers/ata.h"
 #include "kernel/hal/ports.h"
 

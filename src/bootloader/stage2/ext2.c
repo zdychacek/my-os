@@ -1,7 +1,7 @@
 #include "bootloader/stage2/ext2.h"
 #include "bootloader/stage2/vga.h"
 #include "bootloader/stage2/lib.h"
-#include "common/common.h"
+#include "lib/string.h"
 
 /*
   Wait for IDE device to become ready
@@ -81,7 +81,7 @@ block_group_descriptor *ext2_blockdesc()
 
 inode *ext2_inode(int dev, int i)
 {
-  UNUSED(dev);
+  unused(dev);
 
   superblock *s = ext2_superblock();
   block_group_descriptor *bgd = ext2_blockdesc();

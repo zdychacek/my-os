@@ -1,5 +1,4 @@
-#include <stdint.h>
-#include <stdbool.h>
+#include "lib/types.h"
 #include "lib/string.h"
 
 char *itoa(int num, char *str, int base)
@@ -43,20 +42,22 @@ char *itoa(int num, char *str, int base)
   return str;
 }
 
-void strrev(char *str)
+// In place string reverse
+char *strrev(char *s)
 {
-  char a;
-  int len = strlen((const char *)str);
+  int length = strlen(s) - 1;
 
-  for (int i = 0, j = len - 1; i < j; i++, j--)
+  for (int i = 0; i <= length / 2; i++)
   {
-    a = str[i];
-    str[i] = str[j];
-    str[j] = a;
+    char temp = s[i];
+    s[i] = s[length - i];
+    s[length - i] = temp;
   }
+
+  return s;
 }
 
-int strlen(const char *str)
+size_t strlen(const char *str)
 {
   int i = 0;
   while (str[i] != '\0')
@@ -65,16 +66,99 @@ int strlen(const char *str)
   return i;
 }
 
-// Returns<0 if s1<s2, 0 if s1 == s2, > 0 if s1> s2
+int strncmp(const char *s1, const char *s2, size_t n)
+{
+  for (size_t i = 0; i < n && *s1 == *s2; s1++, s2++, i++)
+    if (*s1 == '\0')
+      return 0;
+
+  return (*(unsigned char *)s1 - *(unsigned char *)s2);
+}
+
 int strcmp(const char *s1, const char *s2)
 {
-  int i;
-  for (i = 0; s1[i] == s2[i]; i++)
+  return strncmp(s1, s2, strlen(s1));
+}
+
+// Copy first n characters of src to destination
+char *strncpy(char *dest, const char *src, size_t n)
+{
+  size_t i;
+
+  for (i = 0; i < n && src[i] != '\0'; i++)
   {
-    if (s1[i] == '\0')
-      return 0;
+    dest[i] = src[i];
   }
-  return s1[i] - s2[i];
+
+  for (; i < n; i++)
+  {
+    dest[i] = '\0';
+  }
+
+  return dest;
+}
+
+// Copy all of str to dest
+char *strcpy(char *dest, const char *src)
+{
+  return strncpy(dest, src, strlen(src));
+}
+
+// Appends a copy of the source string to the destination string
+char *strncat(char *destination, const char *source, size_t n)
+{
+  size_t length = strlen(destination);
+  size_t i;
+
+  for (i = 0; i < n && source[i] != '\0'; i++)
+  {
+    destination[length + i] = source[i];
+  }
+
+  destination[length + i] = '\0';
+  return destination;
+}
+
+char *strchr(const char *s, int c)
+{
+  while (*s != '\0')
+    if (*s++ == c)
+      return (char *)s;
+  return NULL;
+}
+
+char *strtok(char *s, const char *delim)
+{
+  char *b = NULL;
+  static char *ptr;
+
+  if (s)
+  {
+    ptr = s;
+  }
+
+  if (!ptr && !s)
+  {
+    return NULL;
+  }
+
+  for (size_t i = 0; i < strlen(delim); i++)
+  {
+    b = ptr;
+    ptr = strchr(ptr, delim[i]);
+
+    if (!ptr)
+    {
+      return b;
+    }
+
+    *--ptr = '\0';
+    ptr++;
+
+    return b;
+  }
+
+  return NULL;
 }
 
 void append(char s[], char n)
@@ -119,4 +203,53 @@ void hex_to_ascii(int n, char *str)
     append(str, tmp - 0xA + 'a');
   else
     append(str, tmp + '0');
+}
+
+int isascii(int c)
+{
+  return c >= 0 && c <= 127;
+}
+
+int isdigit(char c)
+{
+  return c >= '0' && c <= '9';
+}
+
+int islower(char c)
+{
+  return c >= 'a' && c <= 'z';
+}
+
+int isupper(char c)
+{
+  return c >= 'A' && c <= 'Z';
+}
+
+int tolower(char c)
+{
+  return isdigit(c) ? c : islower(c) ? c : (c - 'A') + 'a';
+}
+
+int toupper(char c)
+{
+  return (isdigit(c) ? c : (isupper(c) ? c : ((c - 'a') + 'A')));
+}
+
+void memcpy(void *dest, const void *src, size_t n)
+{
+  char *csrc = (char *)src;
+  char *cdest = (char *)dest;
+
+  for (size_t i = 0; i < n; i++)
+  {
+    cdest[i] = csrc[i];
+  }
+}
+
+void memset(void *dest, int val, size_t n)
+{
+  uint8_t *temp = (uint8_t *)dest;
+
+  for (; n != 0; n--)
+    *temp++ = val;
 }

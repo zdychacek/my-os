@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include "lib/types.h"
 
 /* ISRs reserved for CPU exceptions */
 extern void isr0();

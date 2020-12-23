@@ -2,14 +2,13 @@
 #include "kernel/hal/ports.h"
 #include "kernel/hal/timer.h"
 #include "kernel/drivers/display.h"
-#include "common/common.h"
 
 uint32_t tick = 0;
 
 static void timer_callback(registers_t *regs)
 {
   tick++;
-  UNUSED(regs);
+  unused(regs);
 }
 
 void timer_init(uint32_t freq)

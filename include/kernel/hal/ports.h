@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include "lib/types.h"
 
 uint8_t port_byte_read(uint16_t port);
 void port_byte_write(uint16_t port, uint8_t data);

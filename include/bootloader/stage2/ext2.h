@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include "lib/types.h"
 
 #define BLOCK_SIZE 1024
 #define SECTOR_SIZE 512
