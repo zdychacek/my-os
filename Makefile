@@ -1,5 +1,7 @@
-
-#  https://stackoverflow.com/questions/30573481/path-include-and-src-directory-makefile/30602701
+# Makes:
+#   1. Bootloader (Stage 1 and Stage 2)
+#   2. Kernel
+#   3. `libstd` static library
 
 SRC_DIR := src
 INC_DIR := include
@@ -13,12 +15,23 @@ CC := i386-elf-gcc
 LD := i386-elf-ld
 STRIP := i386-elf-strip
 AR := i386-elf-ar
-RANLIB := i386-elf-ranlib
 AS := nasm
 QEMU := qemu-system-i386
 GDB = i386-elf-gdb
 ARFLAGS := rcs
-CFLAGS := -I$(INC_DIR) -MMD -MP -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
+CFLAGS := -I$(INC_DIR) \
+	-MMD \
+	-MP \
+	-g \
+	-ffreestanding \
+	-Wall \
+	-Wextra \
+	-fno-exceptions \
+	-m32
+
+QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk
+QEMUDBGFLAGS := -s -S
+
 STRIPFLAGS := --only-keep-debug
 FUSE_EXT2 := fuse-ext2
 FUSE_EXT2_FLAGS := -o rw+,allow_other,uid=$(shell id -u),gid=$(shell id -g)
@@ -42,10 +55,15 @@ BOOT_STAGE2_RELEASE_FILE := $(RELEASE_DIR)/$(BOOT_STAGE2_FILE).$(BINARY_EXT)
 BOOT_STAGE2_SRC_DIR := $(BOOT_SRC_DIR)/stage2
 BOOT_STAGE2_SRC_ASM := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.asm)
 BOOT_STAGE2_SRC_C := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.c)
+
 BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
 				$(BOOT_STAGE2_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+
 BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/link.ld
-BOOT_STAGE2_LINK = $(LD) -T $(BOOT_STAGE2_LINK_FILE) -o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
+
+BOOT_STAGE2_LINK = $(LD) \
+	-T $(BOOT_STAGE2_LINK_FILE) \
+	-o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
 
 # LIBRARY
 LIB_FILE := libstd
@@ -61,9 +79,13 @@ KERNEL_SYMBOL_FILE := $(DEBUG_DIR)/$(KERNEL_FILE).$(DEBUG_SYMBOL_EXT)
 KERNEL_RELEASE_FILE := $(RELEASE_DIR)/$(KERNEL_FILE).$(BINARY_EXT)
 KERNEL_SRC_DIR := $(SRC_DIR)/kernel
 KERNEL_SRC_ASM := $(wildcard $(KERNEL_SRC_DIR)/**/*.asm)
-KERNEL_SRC_C := $(wildcard $(KERNEL_SRC_DIR)/*.c) $(wildcard $(KERNEL_SRC_DIR)/**/*.c)
+
+KERNEL_SRC_C := $(wildcard $(KERNEL_SRC_DIR)/*.c) \
+	$(wildcard $(KERNEL_SRC_DIR)/**/*.c)
+
 KERNEL_OBJ := $(KERNEL_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
        	$(KERNEL_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+
 KERNEL_LINK_FILE = $(KERNEL_SRC_DIR)/kernel.ld
 
 KERNEL_LINK = $(LD) \
@@ -73,7 +95,7 @@ KERNEL_LINK = $(LD) \
 	-o $@ $^
 
 # DISK
-DISK_NAME := boot.img
+DISK_NAME := disk.img
 DISK := $(RELEASE_DIR)/$(DISK_NAME)
 DISK_SIZE := 256k
 DISK_MOUNT_DIR := ./mount
@@ -85,15 +107,26 @@ DIR_SENTINEL = @mkdir -p $(@D)
 .PHONY: run compile gdb dbg clean
 
 run: $(DISK)
-	$(QEMU) -hdb $(DISK)
+	$(QEMU) $(QEMUFLAGS)
 
-compile: $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE2_RELEASE_FILE) $(KERNEL_RELEASE_FILE)
+compile: $(BOOT_STAGE1_RELEASE_FILE) \
+	$(BOOT_STAGE2_RELEASE_FILE) \
+	$(KERNEL_RELEASE_FILE)
 
-dbg: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMBOL_FILE)
-	$(QEMU) -s -S -hdb $(DISK)
+dbg: $(DISK) \
+	$(BOOT_STAGE1_SYMBOL_FILE) \
+	$(BOOT_STAGE2_SYMBOL_FILE) \
+	$(KERNEL_SYMBOL_FILE)
+	$(QEMU) \
+	$(QEMUDBGFLAGS) \
+	$(QEMUFLAGS)
 
-gdb: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMBOL_FILE)
-	$(QEMU) -s -S -hdb $(DISK) &
+gdb: $(DISK) \
+	$(BOOT_STAGE1_SYMBOL_FILE) \
+	$(BOOT_STAGE2_SYMBOL_FILE) \
+	$(KERNEL_SYMBOL_FILE)
+
+	$(QEMU) $(QEMUDBGFLAGS) $(QEMUFLAGS) &
 	$(GDB) \
 		-tui \
 		-ex "target remote localhost:1234" \
@@ -103,10 +136,15 @@ gdb: $(DISK) $(BOOT_STAGE1_SYMBOL_FILE) $(BOOT_STAGE2_SYMBOL_FILE) $(KERNEL_SYMB
 
 # BOOTLOADER STAGE 1
 $(BOOT_STAGE1_RELEASE_FILE): $(BOOT_STAGE1_OBJ) | $(RELEASE_DIR)
-	$(LD) -Ttext=$(BOOT_STAGE1_POSITION) --oformat binary -o $@ $^
+	$(LD) \
+		-Ttext=$(BOOT_STAGE1_POSITION) \
+		--oformat binary \
+		-o $@ $^
 
 $(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
-	$(LD) -Ttext=$(BOOT_STAGE1_POSITION) -o $@ $^
+	$(LD) \
+		-Ttext=$(BOOT_STAGE1_POSITION) \
+		-o $@ $^
 	$(STRIP) $(STRIPFLAGS) $@
 
 # BOOTLOADER STAGE 2
@@ -119,6 +157,7 @@ $(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) | $(DEBUG_DIR)
 
 # KERNEL
 $(KERNEL_RELEASE_FILE): $(KERNEL_OBJ) $(LIB_RELEASE_FILE) | $(RELEASE_DIR)
+
 	$(KERNEL_LINK)
 	$(STRIP) $@
 
@@ -143,7 +182,12 @@ $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR):
 	@mkdir -p $@
 
 # DISK
-$(DISK): $(DISK_MOUNT_DIR) $(BOOT_CONF) $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE2_RELEASE_FILE) $(KERNEL_RELEASE_FILE)
+$(DISK): $(DISK_MOUNT_DIR) \
+	$(BOOT_CONF) \
+	$(BOOT_STAGE1_RELEASE_FILE) \
+	$(BOOT_STAGE2_RELEASE_FILE) \
+	$(KERNEL_RELEASE_FILE)
+
 	dd if=/dev/zero of=$@ bs=1 count=$(DISK_SIZE)
 	mke2fs $@
 
@@ -160,6 +204,9 @@ $(DISK): $(DISK_MOUNT_DIR) $(BOOT_CONF) $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE
 	umount -f $(DISK_MOUNT_DIR)
 
 clean:
-	@rm -rfv $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR)
+	@rm -rfv $(RELEASE_DIR) \
+		$(DEBUG_DIR) \
+		$(OBJ_DIR) \
+		$(DISK_MOUNT_DIR)
 
 -include $(OBJ:.o=.d)

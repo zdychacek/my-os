@@ -8,7 +8,7 @@
       "name": "Kernel",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/release/boot.img",
+      "program": "${workspaceRoot}/release/disk.img",
       "cwd": "${workspaceRoot}",
       "args": [],
       "targetArchitecture": "x86",
