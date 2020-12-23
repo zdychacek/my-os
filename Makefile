@@ -12,14 +12,19 @@ BINARY_EXT := bin
 CC := i386-elf-gcc
 LD := i386-elf-ld
 STRIP := i386-elf-strip
+AR := i386-elf-ar
+RANLIB := i386-elf-ranlib
 AS := nasm
 QEMU := qemu-system-i386
 GDB = i386-elf-gdb
+ARFLAGS := rcs
 CFLAGS := -I$(INC_DIR) -MMD -MP -g -ffreestanding -Wall -Wextra -fno-exceptions -m32
 STRIPFLAGS := --only-keep-debug
+FUSE_EXT2 := fuse-ext2
+FUSE_EXT2_FLAGS := -o rw+,allow_other,uid=$(shell id -u),gid=$(shell id -g)
 
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-BOOT_SRC_DIR := $(SRC_DIR)/boot
+BOOT_SRC_DIR := $(SRC_DIR)/bootloader
 
 # BOOTLOADER STAGE 1
 BOOT_STAGE1_FILE := stage1
@@ -42,17 +47,25 @@ BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
 BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/link.ld
 BOOT_STAGE2_LINK = $(LD) -T $(BOOT_STAGE2_LINK_FILE) -o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
 
+# LIBRARY
+LIB_FILE := libstdlib
+LIB_SYMBOL_FILE := $(RELEASE_DIR)/$(LIB_FILE).$(DEBUG_SYMBOL_EXT)
+LIB_RELEASE_FILE := $(RELEASE_DIR)/$(LIB_FILE).a
+LIB_SRC_DIR := $(SRC_DIR)/lib
+LIB_SRC_C := $(wildcard $(LIB_SRC_DIR)/*.c)
+LIB_OBJ := $(LIB_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+
 # KERNEL
 KERNEL_FILE := kernel
 KERNEL_SYMBOL_FILE := $(DEBUG_DIR)/$(KERNEL_FILE).$(DEBUG_SYMBOL_EXT)
 KERNEL_RELEASE_FILE := $(RELEASE_DIR)/$(KERNEL_FILE).$(BINARY_EXT)
-KERNEL_SRC_SUBDIRS := arch-x86 drivers kernel lib
-KERNEL_SRC_ASM := $(foreach dir,$(KERNEL_SRC_SUBDIRS),$(wildcard $(SRC_DIR)/$(dir)/*.asm))
-KERNEL_SRC_C := $(foreach dir,$(KERNEL_SRC_SUBDIRS),$(wildcard $(SRC_DIR)/$(dir)/*.c))
+KERNEL_SRC_DIR := $(SRC_DIR)/kernel
+KERNEL_SRC_ASM := $(wildcard $(KERNEL_SRC_DIR)/**/*.asm)
+KERNEL_SRC_C := $(wildcard $(KERNEL_SRC_DIR)/*.c) $(wildcard $(KERNEL_SRC_DIR)/**/*.c)
 KERNEL_OBJ := $(KERNEL_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
        	$(KERNEL_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
-KERNEL_LINK_FILE = $(SRC_DIR)/kernel/link.ld
-KERNEL_LINK = $(LD) -T $(KERNEL_LINK_FILE) -o $@ $^
+KERNEL_LINK_FILE = $(KERNEL_SRC_DIR)/kernel.ld
+KERNEL_LINK = $(LD) -T $(KERNEL_LINK_FILE) -L$(RELEASE_DIR) -lstdlib -o $@ $^
 
 # DISK
 DISK_NAME := boot.img
@@ -100,13 +113,17 @@ $(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) | $(DEBUG_DIR)
 	$(STRIP) $(STRIPFLAGS) $@
 
 # KERNEL
-$(KERNEL_RELEASE_FILE): $(KERNEL_OBJ) | $(RELEASE_DIR)
+$(KERNEL_RELEASE_FILE): $(KERNEL_OBJ) $(LIB_RELEASE_FILE) | $(RELEASE_DIR)
 	$(KERNEL_LINK)
 	$(STRIP) $@
 
-$(KERNEL_SYMBOL_FILE): $(KERNEL_OBJ) | $(DEBUG_DIR)
+$(KERNEL_SYMBOL_FILE): $(KERNEL_OBJ) $(LIB_RELEASE_FILE) | $(DEBUG_DIR)
 	$(KERNEL_LINK)
 	$(STRIP) $(STRIPFLAGS) $@
+
+# LIBRARY
+$(LIB_RELEASE_FILE): $(LIB_OBJ) | $(RELEASE_DIR)
+	$(AR) $(ARFLAGS) $@ $(LIB_OBJ)
 
 # TODO(ondrej): take *.inc files into account
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | $(OBJ_DIR)
@@ -127,16 +144,17 @@ $(DISK): $(DISK_MOUNT_DIR) $(BOOT_CONF) $(BOOT_STAGE1_RELEASE_FILE) $(BOOT_STAGE
 
 	dd if=$(BOOT_STAGE1_RELEASE_FILE) of=$@ conv=notrunc
 
-	fuse-ext2 $@ $(DISK_MOUNT_DIR) -o rw+
+	$(FUSE_EXT2) $@ $(DISK_MOUNT_DIR) $(FUSE_EXT2_FLAGS)
+	sudo chown -R $(shell id -u):$(shell id -g) $(DISK_MOUNT_DIR)
 
-	sudo cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
-	sudo cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
-	sudo cp $(BOOT_CONF) $(DISK_MOUNT_DIR)
+	cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	cp $(BOOT_CONF) $(DISK_MOUNT_DIR)
 
 	ls -al $(DISK_MOUNT_DIR)
 	umount -f $(DISK_MOUNT_DIR)
 
 clean:
-	@rm -rfv $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR)
+	@rm -rfv $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR)
 
 -include $(OBJ:.o=.d)
