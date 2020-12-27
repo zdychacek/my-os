@@ -1,38 +1,41 @@
 #include "lib/types.h"
 #include "lib/string.h"
 
-char *itoa(int num, char *str, int base)
+char *itoa(uint32_t num, char *str, int base)
 {
   int i = 0;
-  bool isNegative = false;
+  // bool isNegative = false;
 
   /* Handle 0 explicitely, otherwise empty string is printed for 0 */
   if (num == 0)
   {
     str[i++] = '0';
     str[i] = '\0';
+
     return str;
   }
 
+  // TODO: implement support for negative numbers
   // In standard itoa(), negative numbers are handled only with
   // base 10. Otherwise numbers are considered unsigned.
-  if (num < 0 && base == 10)
-  {
-    isNegative = true;
-    num = -num;
-  }
+  // if (num < 0 && base == 10)
+  // {
+  //   isNegative = true;
+  //   num = -num;
+  // }
 
   // Process individual digits
   while (num != 0)
   {
     int rem = num % base;
+
     str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
     num = num / base;
   }
 
   // If number is negative, append '-'
-  if (isNegative)
-    str[i++] = '-';
+  // if (isNegative)
+  //   str[i++] = '-';
 
   str[i] = '\0'; // Append string terminator
 
@@ -50,6 +53,7 @@ char *strrev(char *s)
   for (int i = 0; i <= length / 2; i++)
   {
     char temp = s[i];
+
     s[i] = s[length - i];
     s[length - i] = temp;
   }
@@ -60,8 +64,11 @@ char *strrev(char *s)
 size_t strlen(const char *str)
 {
   int i = 0;
+
   while (str[i] != '\0')
+  {
     ++i;
+  }
 
   return i;
 }
@@ -69,8 +76,12 @@ size_t strlen(const char *str)
 int strncmp(const char *s1, const char *s2, size_t n)
 {
   for (size_t i = 0; i < n && *s1 == *s2; s1++, s2++, i++)
+  {
     if (*s1 == '\0')
+    {
       return 0;
+    }
+  }
 
   return (*(unsigned char *)s1 - *(unsigned char *)s2);
 }
@@ -116,14 +127,20 @@ char *strncat(char *destination, const char *source, size_t n)
   }
 
   destination[length + i] = '\0';
+
   return destination;
 }
 
 char *strchr(const char *s, int c)
 {
   while (*s != '\0')
+  {
     if (*s++ == c)
+    {
       return (char *)s;
+    }
+  }
+
   return NULL;
 }
 
@@ -164,6 +181,7 @@ char *strtok(char *s, const char *delim)
 void append(char s[], char n)
 {
   int len = strlen(s);
+
   s[len] = n;
   s[len + 1] = '\0';
 }
@@ -171,6 +189,7 @@ void append(char s[], char n)
 void backspace(char s[])
 {
   int len = strlen(s);
+
   s[len - 1] = '\0';
 }
 
@@ -187,50 +206,60 @@ void hex_to_ascii(int n, char *str)
     tmp = (n >> i) & 0xF;
 
     if (tmp == 0 && zeros == 0)
+    {
       continue;
+    }
 
     zeros = 1;
 
     if (tmp > 0xA)
+    {
       append(str, tmp - 0xA + 'a');
+    }
     else
+    {
       append(str, tmp + '0');
+    }
   }
 
   tmp = n & 0xF;
 
   if (tmp >= 0xA)
+  {
     append(str, tmp - 0xA + 'a');
+  }
   else
+  {
     append(str, tmp + '0');
+  }
 }
 
-int isascii(int c)
+bool isascii(int c)
 {
   return c >= 0 && c <= 127;
 }
 
-int isdigit(char c)
+bool isdigit(char c)
 {
   return c >= '0' && c <= '9';
 }
 
-int islower(char c)
+bool islower(char c)
 {
   return c >= 'a' && c <= 'z';
 }
 
-int isupper(char c)
+bool isupper(char c)
 {
   return c >= 'A' && c <= 'Z';
 }
 
-int tolower(char c)
+bool tolower(char c)
 {
   return isdigit(c) ? c : islower(c) ? c : (c - 'A') + 'a';
 }
 
-int toupper(char c)
+bool toupper(char c)
 {
   return (isdigit(c) ? c : (isupper(c) ? c : ((c - 'a') + 'A')));
 }
@@ -251,5 +280,7 @@ void memset(void *dest, int val, size_t n)
   uint8_t *temp = (uint8_t *)dest;
 
   for (; n != 0; n--)
+  {
     *temp++ = val;
+  }
 }

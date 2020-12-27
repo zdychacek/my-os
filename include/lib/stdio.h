@@ -2,4 +2,4 @@
 
 #include "lib/types.h"
 
-int vsprintf(char *str, const char *format, va_list ap);
+size_t vsprintf(char *buf, const char *fmt, va_list args);

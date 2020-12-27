@@ -20,17 +20,17 @@ typedef unsigned char *va_list;
 // round up width of objects pushed on stack. The expression before the
 // & ensures that we get 0 for objects of size 0.
 #define VA_SIZE(TYPE) \
-    ((sizeof(TYPE) + sizeof(STACKITEM) - 1) & ~(sizeof(STACKITEM) - 1))
+  ((sizeof(TYPE) + sizeof(STACKITEM) - 1) & ~(sizeof(STACKITEM) - 1))
 
 // &(LASTARG) points to the LEFTMOST argument of the function call (before the ...)
 #define va_start(AP, LASTARG) \
-    (AP = ((va_list) & (LASTARG) + VA_SIZE(LASTARG)))
+  (AP = ((va_list) & (LASTARG) + VA_SIZE(LASTARG)))
 
 // nothing for va_end
 #define va_end(AP)
 
 #define va_arg(AP, TYPE) \
-    (AP += VA_SIZE(TYPE), *((TYPE *)(AP - VA_SIZE(TYPE))))
+  (AP += VA_SIZE(TYPE), *((TYPE *)(AP - VA_SIZE(TYPE))))
 
 // Sometimes we want to keep parameters to a function for later use
 // and this is a solution to avoid the 'unused parameter' compiler warning
@@ -39,3 +39,5 @@ typedef unsigned char *va_list;
 #define bool int
 #define true 1
 #define false 0
+
+#define UINT32_MAX (0xffffffff)

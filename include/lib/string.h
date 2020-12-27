@@ -2,7 +2,7 @@
 
 #include "lib/types.h"
 
-char *itoa(int num, char *str, int base);
+char *itoa(uint32_t num, char *str, int base);
 char *strrev(char *s);
 size_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);
@@ -16,12 +16,12 @@ char *strncat(char *destination, const char *source, size_t n);
 char *strchr(const char *s, int c);
 char *strtok(char *s, const char *delim);
 
-int isascii(int c);
-int isdigit(char c);
-int islower(char c);
-int isupper(char c);
-int tolower(char c);
-int toupper(char c);
+bool isascii(bool c);
+bool isdigit(char c);
+bool islower(char c);
+bool isupper(char c);
+bool tolower(char c);
+bool toupper(char c);
 
 void memcpy(void *dest, const void *src, size_t len);
 void memset(void *dest, int val, size_t n);
