@@ -3,6 +3,7 @@
 #include "lib/types.h"
 #include "lib/memory.h"
 #include "lib/string.h"
+#include "lib/stdio.h"
 
 // Declaration of private functions
 int get_cursor_offset();
@@ -82,66 +83,19 @@ void kprint_backspace()
 
 void kprintf(const char *format, ...)
 {
-  char **arg = (char **)&format;
-  char c;
-  char buf[20];
+  char buf[1024] = {-1};
 
-  arg++;
+  va_list args;
+  va_start(args, format);
 
-  while ((c = *format++) != 0)
-  {
-    if (c != '%')
-      print_char(c, -1, -1, 0);
-    else
-    {
-      char *p, *p2;
-      int pad0 = 0, pad = 0;
+  vsprintf(buf, format, args);
 
-      c = *format++;
-      if (c == '0')
-      {
-        pad0 = 1;
-        c = *format++;
-      }
+  va_end(args);
 
-      if (c >= '0' && c <= '9')
-      {
-        pad = c - '0';
-        c = *format++;
-      }
+  uint8_t *c = (uint8_t *)buf;
 
-      switch (c)
-      {
-      case 'u':
-      case 'd':
-        itoa(*((int *)arg++), buf, 10);
-        p = buf;
-        goto string;
-        break;
-      case 'X':
-      case 'x':
-        itoa(*((int *)arg++), buf, 16);
-        p = buf;
-        goto string;
-        break;
-      case 's':
-        p = *arg++;
-        if (!p)
-          p = "(null)";
-      string:
-        for (p2 = p; *p2; p2++)
-          ;
-        for (; p2 < p + pad; p2++)
-          print_char(pad0 ? '0' : ' ', -1, -1, 0);
-        while (*p)
-          print_char(*p++, -1, -1, 0);
-        break;
-      default:
-        print_char(*((int *)arg++), -1, -1, 0);
-        break;
-      }
-    }
-  }
+  while (*c)
+    print_char(*c++, -1, -1, 0);
 }
 
 /**********************************************************
@@ -159,8 +113,11 @@ void kprintf(const char *format, ...)
 int print_char(char c, int col, int row, char attr)
 {
   unsigned char *vidmem = (unsigned char *)VIDEO_ADDRESS;
+
   if (!attr)
+  {
     attr = WHITE_ON_BLACK;
+  }
 
   /* Error control: print a red 'E' if the coords aren't right */
   if (col >= MAX_COLS || row >= MAX_ROWS)
@@ -194,18 +151,22 @@ int print_char(char c, int col, int row, char attr)
     offset += 2;
   }
 
-  /* Check if the offset is over screen size and scroll */
+  // Check if the offset is over screen size and scroll
   if (offset >= MAX_ROWS * MAX_COLS * 2)
   {
     for (int i = 1; i < MAX_ROWS; i++)
+    {
       memcpy((uint8_t *)get_offset(0, i - 1) + VIDEO_ADDRESS,
              (uint8_t *)get_offset(0, i) + VIDEO_ADDRESS,
              MAX_COLS * 2);
-
-    /* Blank last line */
+    }
+    // Blank last line
     char *last_line = (char *)get_offset(0, MAX_ROWS - 1) + VIDEO_ADDRESS;
+
     for (int i = 0; i < MAX_COLS * 2; i++)
+    {
       last_line[i] = 0;
+    }
 
     offset -= 2 * MAX_COLS;
   }

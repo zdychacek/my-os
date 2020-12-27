@@ -2,8 +2,6 @@
 
 #include "lib/types.h"
 
-#define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
-
 typedef struct _multiboot_info
 {
   uint32_t flags;
@@ -30,12 +28,7 @@ typedef struct _multiboot_info
   uint16_t vbe_interface_len;
 } multiboot_info;
 
-typedef struct _memory_region
-{
-  uint64_t base;
-  uint64_t len;
-  uint64_t type;
-} memory_region;
+#define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
 // Multiboot flags
 #define MULTIBOOT_FLAGS_MEM 1
