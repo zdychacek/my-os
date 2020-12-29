@@ -9,6 +9,7 @@
 #include "kernel/memory/heap.h"
 #include "kernel/memory/memory_region.h"
 #include "kernel/memory/pm_manager.h"
+#include "kernel/memory/vm_manager.h"
 #include "lib/string.h"
 #include "lib/memory.h"
 
@@ -40,6 +41,8 @@ void kmain(unsigned long magic, multiboot_info *mbi)
 
   pmm_init(phys_memory_avail, (physical_addr)&kernel_start, (physical_addr)&kernel_end,
            (memory_region *)mbi->mmap_addr, mbi->mmap_length);
+
+  vmm_init();
 
   //memory_init((uint32_t)&kernel_end);
   isr_init();

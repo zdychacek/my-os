@@ -43,7 +43,7 @@
 %define GDT_DATA_OFFSET 0x10 ; Offset to GDT data segment
 
 %define REAL_STACK_BASE 0x7c00 ; Position stack base right before the bootloader.
-%define STACK_POINTER 0x00900000 ; The initial stack pointer for Stage 2 loader
+%define STACK_POINTER 0x00300000 ; The initial stack pointer for Stage 2 loader
 %define STAGE2_POSITION 0x00050000 ; Loaded Stage 2 position
 
 ; Multiboot flags

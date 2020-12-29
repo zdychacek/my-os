@@ -44,7 +44,7 @@ extern uint32_t pmm_get_block_count();
 extern uint32_t pmm_get_block_size();
 
 // enable or disable paging
-extern void pmm_toggle_paging(bool);
+extern void pmm_enable_paging(bool);
 
 // test if paging is enabled
 extern bool pmm_is_paging_enabled();

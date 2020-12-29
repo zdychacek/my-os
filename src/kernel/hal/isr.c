@@ -114,6 +114,12 @@ void isr_handler(registers_t *r)
   kprint("\n");
   kprint(exception_messages[r->int_no]);
   kprint("\n");
+
+  asm volatile("cli\nhlt");
+
+  for (;;)
+  {
+  }
 }
 
 void register_interrupt_handler(uint8_t n, isr_t handler)
