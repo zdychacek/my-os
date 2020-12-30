@@ -1,7 +1,7 @@
 #include "bootloader/bootinfo.h"
 #include "kernel/main.h"
 #include "kernel/hal/timer.h"
-#include "kernel/hal/isr.h"
+#include "kernel/hal/idt.h"
 #include "kernel/hal/rtc.h"
 #include "kernel/drivers/display.h"
 #include "kernel/drivers/ata.h"
@@ -23,6 +23,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     kprintf("Invalid bootloader magic number: 0x%x\n", magic);
+
     return;
   }
 
@@ -31,6 +32,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   if (mbi->flags != MULTIBOOT_FLAGS)
   {
     kprintf("Bad multiboot flags (expecting: 0x%x, got: 0x%x)\n", MULTIBOOT_FLAGS, mbi->flags);
+
     return;
   }
 
@@ -45,7 +47,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   vmm_init();
 
   //memory_init((uint32_t)&kernel_end);
-  isr_init();
+  idt_init();
   timer_init(50);
   keyboard_init();
   rtc_init();
@@ -62,6 +64,10 @@ void kmain(unsigned long magic, multiboot_info *mbi)
          "        \\/  \\/              \\/         \\/ \n");
 
   kprint("\nType command or HELP: \n> ");
+
+  // Uncomment to raise Page Fault exception
+  // int *data = (int *)0x900000;
+  // *data = 12;
 
   for (;;)
     ;

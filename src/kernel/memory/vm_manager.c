@@ -1,5 +1,8 @@
 #include "kernel/memory/vm_manager.h"
 #include "kernel/memory/pm_manager.h"
+#include "kernel/hal/idt.h"
+#include "kernel/drivers/display.h"
+#include "kernel/panic.h"
 #include "lib/string.h"
 
 // defined in ASM
@@ -19,6 +22,8 @@ pdirectory *_current_directory = 0;
 
 // current page directory base register
 physical_addr _current_pdbr = 0;
+
+static void page_fault_handler(ir_params *params);
 
 inline pt_entry *vmm_ptable_lookup_entry(ptable *page, virtual_addr address)
 {
@@ -178,9 +183,70 @@ void vmm_init()
   // store current PDBR
   _current_pdbr = (physical_addr)&directory->entries;
 
+  idt_install_ir_handler(14, page_fault_handler);
   // switch to our page directory
   vmm_switch_directory(directory);
 
   // enable paging
   pmm_enable_paging(true);
+}
+
+static void page_fault_handler(ir_params *params)
+{
+  asm volatile("sti");
+
+  // Gather fault info and print to screen
+  uint32_t faulting_addr;
+
+  asm volatile("mov %%cr2, %0"
+               : "=r"(faulting_addr));
+
+  kprintf("\nPage fault while accessing address: 0x%x\n\n", faulting_addr);
+
+  uint32_t present = params->err_code & PAGING_ERR_PRESENT;
+  uint32_t rw = params->err_code & PAGING_ERR_RW;
+  uint32_t user = params->err_code & PAGING_ERR_USER;
+
+  // https://wiki.osdev.org/Paging#Handling
+  if (!user && !rw && !present)
+  {
+    kprint("Supervisory process tried to read a non-present page entry.\n");
+  }
+
+  if (!user && !rw && present)
+  {
+    kprint("Supervisory process tried to read a page and caused a protection fault.\n");
+  }
+
+  if (!user && rw && !present)
+  {
+    kprint("Supervisory process tried to write to a non-present page entry.\n");
+  }
+
+  if (!user && rw && present)
+  {
+    kprint("Supervisory process tried to write a page and caused a protection fault.\n");
+  }
+
+  if (user && !rw && !present)
+  {
+    kprint("User process tried to read a non-present page entry.\n");
+  }
+
+  if (user && !rw && present)
+  {
+    kprint("User process tried to read a page and caused a protection fault.\n");
+  }
+
+  if (user && rw && !present)
+  {
+    kprint("User process tried to write to a non-present page entry.\n");
+  }
+
+  if (user && rw && present)
+  {
+    kprint("User process tried to write a page and caused a protection fault.\n");
+  }
+
+  kernel_panic("");
 }
