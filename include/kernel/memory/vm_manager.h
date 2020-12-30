@@ -1,8 +1,8 @@
 #pragma once
 
 #include "lib/types.h"
-#include "kernel/memory/vm_manager_pte.h"
-#include "kernel/memory/vm_manager_pde.h"
+#include "kernel/memory/vm_pte.h"
+#include "kernel/memory/vm_pde.h"
 
 // virtual address
 typedef uint32_t virtual_addr;

@@ -1,4 +1,4 @@
-#include "kernel/memory/vm_manager_pde.h"
+#include "kernel/memory/vm_pde.h"
 
 inline void pd_entry_add_attribute(pd_entry *entry, uint32_t attrib)
 {

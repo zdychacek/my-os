@@ -1,4 +1,4 @@
-#include "kernel/memory/vm_manager_pte.h"
+#include "kernel/memory/vm_pte.h"
 
 inline void pt_entry_add_attribute(pt_entry *entry, uint32_t attribute)
 {
