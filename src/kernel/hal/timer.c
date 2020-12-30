@@ -1,11 +1,11 @@
-#include "kernel/hal/isr.h"
+#include "kernel/hal/idt.h"
 #include "kernel/hal/ports.h"
 #include "kernel/hal/timer.h"
 #include "kernel/drivers/display.h"
 
 uint32_t tick = 0;
 
-static void timer_callback(registers_t *regs)
+static void timer_callback(ir_params *regs)
 {
   tick++;
   unused(regs);
@@ -14,7 +14,7 @@ static void timer_callback(registers_t *regs)
 void timer_init(uint32_t freq)
 {
   // Install the function we just wrote
-  register_interrupt_handler(IRQ0, timer_callback);
+  idt_install_ir_handler(IRQ0, timer_callback);
 
   // Get the PIT value: hardware clock at 1193180 Hz
   uint32_t divisor = 1193180 / freq;

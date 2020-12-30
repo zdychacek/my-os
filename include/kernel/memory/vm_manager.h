@@ -7,6 +7,11 @@
 // virtual address
 typedef uint32_t virtual_addr;
 
+// Err code interpretation
+#define PAGING_ERR_PRESENT 0x1
+#define PAGING_ERR_RW 0x2
+#define PAGING_ERR_USER 0x4
+
 #define PAGES_PER_TABLE 1024
 #define PAGES_PER_DIR 1024
 
