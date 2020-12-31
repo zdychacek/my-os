@@ -230,6 +230,7 @@ void *pmm_alloc_block()
   mmap_set(frame);
 
   physical_addr address = frame * PMMNGR_BLOCK_SIZE;
+
   _pmm_used_blocks++;
 
   return (void *)address;

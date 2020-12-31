@@ -1,0 +1,6 @@
+#pragma once
+
+#define KERNEL_VIRTUAL_BASE 0xC0000000
+
+#define PHYS_TO_VIRT(p) (p + KERNEL_VIRTUAL_BASE)
+#define VIRT_TO_PHYS(p) (p - KERNEL_VIRTUAL_BASE)

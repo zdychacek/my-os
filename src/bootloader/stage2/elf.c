@@ -103,8 +103,6 @@ void elf_load(multiboot_info *bootinfo, bootconfig *boot_cfg)
   elf32_phdr *phdr = (elf32_phdr *)((uint32_t)data + ehdr->e_phoff);
   elf32_phdr *last_phdr = (elf32_phdr *)((uint32_t)phdr + (ehdr->e_phentsize * ehdr->e_phnum));
 
-  uint32_t off = (phdr->p_vaddr - phdr->p_paddr);
-
   while (phdr < last_phdr)
   {
     printx("header: ", phdr->p_paddr);
@@ -112,7 +110,7 @@ void elf_load(multiboot_info *bootinfo, bootconfig *boot_cfg)
     phdr++;
   }
 
-  void (*entry)(unsigned long, multiboot_info *) = (void *)(ehdr->e_entry - off);
+  void (*entry)() = (void *)(ehdr->e_entry);
   printx("entry: ", (uint32_t)entry);
 
   // CLEAR OUT THE ENTIRE HEAP
@@ -120,5 +118,12 @@ void elf_load(multiboot_info *bootinfo, bootconfig *boot_cfg)
   memset((void *)HEAP_START, 0, (END_OF_HEAP - HEAP_START));
 
   asm volatile("cli");
-  entry(0x2BADB002, bootinfo);
+
+  // cannot use eax register because its reserved for return address of following kernel entry call
+  asm volatile("mov $0x2BADB002, %%ecx" ::
+                   : "%ecx");
+  asm volatile("mov %0, %%ebx" ::"r"((uint32_t)bootinfo)
+               : "%ebx", "%ecx");
+
+  entry();
 }

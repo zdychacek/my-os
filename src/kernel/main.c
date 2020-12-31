@@ -2,6 +2,7 @@
 #include "kernel/main.h"
 #include "kernel/hal/timer.h"
 #include "kernel/hal/idt.h"
+#include "kernel/hal/gdt.h"
 #include "kernel/hal/rtc.h"
 #include "kernel/drivers/display.h"
 #include "kernel/drivers/ata.h"
@@ -13,8 +14,11 @@
 #include "lib/string.h"
 #include "lib/memory.h"
 
+// defined and exported from linker script
 extern uint32_t kernel_start;
 extern uint32_t kernel_end;
+extern uint32_t kernel_virt_start;
+extern uint32_t kernel_virt_end;
 
 void kmain(unsigned long magic, multiboot_info *mbi)
 {
@@ -29,6 +33,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
 
   kprintf("Multiboot flags = 0x%x\n", mbi->flags);
 
+  // TODO: fix use bitmask check
   if (mbi->flags != MULTIBOOT_FLAGS)
   {
     kprintf("Bad multiboot flags (expecting: 0x%x, got: 0x%x)\n", MULTIBOOT_FLAGS, mbi->flags);
@@ -41,12 +46,13 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // get memory size in KB
   uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;
 
-  pmm_init(phys_memory_avail, (physical_addr)&kernel_start, (physical_addr)&kernel_end,
+  pmm_init(phys_memory_avail, (physical_addr)&kernel_virt_start, (physical_addr)&kernel_virt_end,
            (memory_region *)mbi->mmap_addr, mbi->mmap_length);
 
   vmm_init();
 
   //memory_init((uint32_t)&kernel_end);
+  gdt_init();
   idt_init();
   timer_init(50);
   keyboard_init();
@@ -54,7 +60,8 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // enable interrupts
   irq_init();
 
-  kprintf("Kernel begins at 0x%x, ends at 0x%x\n\n", &kernel_start, &kernel_end);
+  kprintf("Kernel begins at 0x%x (0x%x), ends at 0x%x (0x%x)\n\n",
+          &kernel_start, &kernel_virt_start, &kernel_end, &kernel_virt_end);
 
   kprint("   _____            ________     _________\n"
          "  /     \\   ___.__. \\_____  \\   /   _____/\n"
