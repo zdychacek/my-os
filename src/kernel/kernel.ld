@@ -1,26 +1,25 @@
 OUTPUT_FORMAT(elf32-i386)
-ENTRY(kmain)
+ENTRY(loader)
 SECTIONS
  {
-   . = 1M;
-   kernel_start = .;
+   . = 0xC0100000;
+   kernel_virt_start = .;
+   kernel_start = . - 0xC0000000;
 
-  .text BLOCK(4K) : ALIGN(4K)
+  .text BLOCK(4K) : AT(ADDR(.text) - 0xC0000000)
   {
     *(.text)
-  }
-  .rodata BLOCK(4K) : ALIGN(4K)
-  {
 	  *(.rodata)
   }
-  .data BLOCK(4K) : ALIGN(4K)
+  .data BLOCK(4K) : AT(ADDR(.data) - 0xC0000000)
 	{
 		*(.data)
 	}
-  .bss BLOCK(4K) : ALIGN(4K)
+  .bss BLOCK(4K) : AT(ADDR(.bss) - 0xC0000000)
 	{
 		*(COMMON)
 		*(.bss)
 	}
-  kernel_end = .;
+  kernel_virt_end = .;
+  kernel_end = . - 0xC0000000;
  }

@@ -1,5 +1,6 @@
 #include "kernel/memory/vm_manager.h"
 #include "kernel/memory/pm_manager.h"
+#include "kernel/memory/defs.h"
 #include "kernel/hal/idt.h"
 #include "kernel/drivers/display.h"
 #include "kernel/panic.h"
@@ -141,27 +142,28 @@ void vmm_map_page(void *phys, void *virt)
 
 void vmm_init()
 {
-  ptable *table = (ptable *)pmm_alloc_block();
+  // allocates 3gb page table
+  ptable *higher_half_page = (ptable *)pmm_alloc_block();
 
-  if (!table)
+  if (!higher_half_page)
   {
     return;
   }
 
-  // clear page table
-  memset(table, 0, sizeof(ptable));
+  memset(higher_half_page, 0, sizeof(ptable));
 
-  // 1st 4mb are idenitity mapped
-  for (int i = 0, frame = 0x0, virt = 0x00000000; i < 1024; i++, frame += 4096, virt += 4096)
+  // map first 4mb to 3gb base
+  for (int i = 0, frame = 0x000000, virt = KERNEL_VIRTUAL_BASE; i < 1024; i++, frame += 4096, virt += 4096)
   {
     // create a new page
     pt_entry page = 0;
 
     pt_entry_add_attribute(&page, I86_PTE_PRESENT);
+    pt_entry_add_attribute(&page, I86_PTE_WRITABLE);
     pt_entry_set_frame(&page, frame);
 
     // ...and add it to the page table
-    table->entries[PAGE_TABLE_INDEX(virt)] = page;
+    higher_half_page->entries[PAGE_TABLE_INDEX(virt)] = page;
   }
 
   // create default directory table
@@ -175,15 +177,16 @@ void vmm_init()
   // clear directory table and set it as current
   memset(directory, 0, sizeof(pdirectory));
 
-  pd_entry *entry = &directory->entries[PAGE_DIRECTORY_INDEX(0x00000000)];
-  pd_entry_add_attribute(entry, I86_PDE_PRESENT);
-  pd_entry_add_attribute(entry, I86_PDE_WRITABLE);
-  pd_entry_set_frame(entry, (physical_addr)table);
+  pd_entry *higher_half_entry = &directory->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRTUAL_BASE)];
+  pd_entry_add_attribute(higher_half_entry, I86_PDE_PRESENT);
+  pd_entry_add_attribute(higher_half_entry, I86_PDE_WRITABLE);
+  pd_entry_set_frame(higher_half_entry, (physical_addr)higher_half_page);
 
   // store current PDBR
   _current_pdbr = (physical_addr)&directory->entries;
 
   idt_install_ir_handler(14, page_fault_handler);
+
   // switch to our page directory
   vmm_switch_directory(directory);
 
