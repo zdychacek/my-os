@@ -19,7 +19,7 @@ extern void _flush_tlb_entry(virtual_addr address);
 #define PAGE_SIZE 4096
 
 // current directory table
-pdirectory *_current_directory = 0;
+pdirectory *_current_directory = NULL;
 
 // current page directory base register
 physical_addr _current_pdbr = 0;
@@ -33,17 +33,17 @@ inline pt_entry *vmm_ptable_lookup_entry(ptable *page, virtual_addr address)
     return &page->entries[PAGE_TABLE_INDEX(address)];
   }
 
-  return 0;
+  return NULL;
 }
 
 inline pd_entry *vmm_pdirectory_lookup_entry(pdirectory *page, virtual_addr address)
 {
   if (page)
   {
-    return &page->entries[PAGE_TABLE_INDEX(address)];
+    return &page->entries[PAGE_DIRECTORY_INDEX(address)];
   }
 
-  return 0;
+  return NULL;
 }
 
 inline bool vmm_switch_directory(pdirectory *directory)
@@ -73,7 +73,7 @@ pdirectory *vmm_get_directory()
 bool vmm_alloc_page(pt_entry *entry)
 {
   // allocate a free physical frame
-  void *page = pmm_alloc_block();
+  void *page = pmm_alloc_frame();
 
   if (!page)
   {
@@ -82,7 +82,7 @@ bool vmm_alloc_page(pt_entry *entry)
 
   // map it to the page
   pt_entry_set_frame(entry, (physical_addr)page);
-  pt_entry_add_attribute(entry, I86_PTE_PRESENT);
+  pt_entry_add_attribute(entry, PTE_PRESENT);
 
   return true;
 }
@@ -93,10 +93,10 @@ void vmm_free_page(pt_entry *entry)
 
   if (page)
   {
-    pmm_free_block(page);
+    pmm_free_frame(page);
   }
 
-  pt_entry_remove_attribute(entry, I86_PTE_PRESENT);
+  pt_entry_remove_attribute(entry, PTE_PRESENT);
 }
 
 void vmm_map_page(void *phys, void *virt)
@@ -107,10 +107,10 @@ void vmm_map_page(void *phys, void *virt)
   // get page table
   pd_entry *directory_entry = &directory->entries[PAGE_DIRECTORY_INDEX((uint32_t)virt)];
 
-  if ((*directory_entry & I86_PTE_PRESENT) != I86_PTE_PRESENT)
+  if ((*directory_entry & PTE_PRESENT) != PTE_PRESENT)
   {
     // page table not present, allocate it
-    ptable *table = (ptable *)pmm_alloc_block();
+    ptable *table = (ptable *)pmm_alloc_frame();
 
     if (!table)
     {
@@ -124,8 +124,8 @@ void vmm_map_page(void *phys, void *virt)
     pd_entry *entry = &directory->entries[PAGE_DIRECTORY_INDEX((uint32_t)virt)];
 
     // map in the table
-    pd_entry_add_attribute(entry, I86_PDE_PRESENT);
-    pd_entry_add_attribute(entry, I86_PDE_WRITABLE);
+    pd_entry_add_attribute(entry, PDE_PRESENT);
+    pd_entry_add_attribute(entry, PDE_WRITABLE);
     pd_entry_set_frame(entry, (physical_addr)table);
   }
 
@@ -137,13 +137,15 @@ void vmm_map_page(void *phys, void *virt)
 
   // map it in
   pt_entry_set_frame(page, (physical_addr)phys);
-  pt_entry_add_attribute(page, I86_PTE_PRESENT);
+  pt_entry_add_attribute(page, PTE_PRESENT);
 }
 
 void vmm_init()
 {
+  idt_install_ir_handler(14, page_fault_handler);
+
   // allocates 3gb page table
-  ptable *higher_half_page = (ptable *)pmm_alloc_block();
+  ptable *higher_half_page = (ptable *)pmm_alloc_frame();
 
   if (!higher_half_page)
   {
@@ -158,8 +160,8 @@ void vmm_init()
     // create a new page
     pt_entry page = 0;
 
-    pt_entry_add_attribute(&page, I86_PTE_PRESENT);
-    pt_entry_add_attribute(&page, I86_PTE_WRITABLE);
+    pt_entry_add_attribute(&page, PTE_PRESENT);
+    pt_entry_add_attribute(&page, PTE_WRITABLE);
     pt_entry_set_frame(&page, frame);
 
     // ...and add it to the page table
@@ -167,7 +169,7 @@ void vmm_init()
   }
 
   // create default directory table
-  pdirectory *directory = (pdirectory *)pmm_alloc_blocks(2);
+  pdirectory *directory = (pdirectory *)pmm_alloc_frames(2);
 
   if (!directory)
   {
@@ -178,14 +180,13 @@ void vmm_init()
   memset(directory, 0, sizeof(pdirectory));
 
   pd_entry *higher_half_entry = &directory->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRTUAL_BASE)];
-  pd_entry_add_attribute(higher_half_entry, I86_PDE_PRESENT);
-  pd_entry_add_attribute(higher_half_entry, I86_PDE_WRITABLE);
+
+  pd_entry_add_attribute(higher_half_entry, PDE_PRESENT);
+  pd_entry_add_attribute(higher_half_entry, PDE_WRITABLE);
   pd_entry_set_frame(higher_half_entry, (physical_addr)higher_half_page);
 
   // store current PDBR
   _current_pdbr = (physical_addr)&directory->entries;
-
-  idt_install_ir_handler(14, page_fault_handler);
 
   // switch to our page directory
   vmm_switch_directory(directory);

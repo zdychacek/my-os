@@ -1,7 +1,7 @@
 #include "lib/types.h"
 #include "lib/string.h"
 
-char *itoa(uint32_t num, char *str, int base)
+char *itoa(unsigned int num, char *str, int base)
 {
   int i = 0;
   // bool isNegative = false;
@@ -281,6 +281,6 @@ void memset(void *dest, int val, size_t n)
 
   for (; n != 0; n--)
   {
-    *temp++ = val;
+    *temp++ = (uint8_t)val;
   }
 }

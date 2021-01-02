@@ -73,7 +73,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   kprint("\nType command or HELP: \n> ");
 
   // Uncomment to raise Page Fault exception
-  // int *data = (int *)0x900000;
+  // int *data = (int *)0x0;
   // *data = 12;
 
   for (;;)

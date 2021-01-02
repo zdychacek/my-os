@@ -2,7 +2,7 @@
 
 #include "lib/types.h"
 
-char *itoa(uint32_t num, char *str, int base);
+char *itoa(unsigned int num, char *str, int base);
 char *strrev(char *s);
 size_t strlen(const char *s);
 int strcmp(const char *s1, const char *s2);

@@ -19,29 +19,26 @@ static char *str_memory_types[] = {
     "ACPI NVS Memory"};
 #endif
 
-// 8 blocks per byte
-#define PMMNGR_BLOCKS_PER_BYTE 8
+// 8 frames per byte
+#define FRAMES_PER_BYTE 8
 
-// block size (4k)
-#define PMMNGR_BLOCK_SIZE 4096
-
-// block alignment
-#define PMMNGR_BLOCK_ALIGN PMMNGR_BLOCK_SIZE
+// frame size (4k)
+#define FRAME_SIZE 4096
 
 // size of physical memory
-static uint32_t _pmm_memory_size = 0;
+static uint32_t memory_size = 0;
 
-// number of blocks currently in use
-static uint32_t _pmm_used_blocks = 0;
+// number of frames currently in use
+static uint32_t used_frames = 0;
 
-// maximum number of available memory blocks
-static uint32_t _pmm_max_blocks = 0;
+// maximum number of available memory frames
+static uint32_t max_frames = 0;
 
-// memory map bit array. Each bit represents a memory block
-static uint32_t *_pmm_memory_map = 0;
+// memory map bit array. Each bit represents a memory frame
+static uint32_t *memory_map = 0;
 
 // memory map bit array size
-static uint32_t _pmm_memory_map_size = 0;
+static uint32_t memory_map_size = 0;
 
 // finds first free frame in the bit array and returns its index
 int mmap_first_free();
@@ -52,34 +49,34 @@ int mmap_first_free_s(size_t size);
 // set any bit (frame) within the memory map bit array
 void mmap_set(int bit)
 {
-  _pmm_memory_map[bit / 32] |= (1 << (bit % 32));
+  memory_map[bit / 32] |= (1 << (bit % 32));
 }
 
 // unset any bit (frame) within the memory map bit array
 void mmap_unset(int bit)
 {
-  _pmm_memory_map[bit / 32] &= ~(1 << (bit % 32));
+  memory_map[bit / 32] &= ~(1 << (bit % 32));
 }
 
 // test if any bit (frame) is set within the memory map bit array
 bool mmap_test(int bit)
 {
-  return _pmm_memory_map[bit / 32] & (1 << (bit % 32));
+  return memory_map[bit / 32] & (1 << (bit % 32));
 }
 
 // finds first free frame in the bit array and returns its index
 int mmap_first_free()
 {
   // find the first free bit
-  for (uint32_t i = 0; i < pmm_get_block_count(); i++)
-    if (_pmm_memory_map[i] != 0xffffffff)
+  for (uint32_t i = 0; i < pmm_get_frames_count(); i++)
+    if (memory_map[i] != 0xffffffff)
     {
       // test each bit in the dword
       for (int j = 0; j < 32; j++)
       {
         int bit = 1 << j;
 
-        if (!(_pmm_memory_map[i] & bit))
+        if (!(memory_map[i] & bit))
         {
           return i * 32 + j;
         }
@@ -102,16 +99,16 @@ int mmap_first_free_s(size_t size)
     return mmap_first_free();
   }
 
-  for (uint32_t i = 0; i < pmm_get_block_count(); i++)
+  for (uint32_t i = 0; i < pmm_get_frames_count(); i++)
   {
-    if (_pmm_memory_map[i] != 0xffffffff)
+    if (memory_map[i] != 0xffffffff)
     {
       // test each bit in the dword
       for (int j = 0; j < 32; j++)
       {
         int bit = 1 << j;
 
-        if (!(_pmm_memory_map[i] & bit))
+        if (!(memory_map[i] & bit))
         {
           int starting_bit = i * 32;
           starting_bit += bit; // get the free bit in the dword at index i
@@ -138,16 +135,16 @@ int mmap_first_free_s(size_t size)
   return -1;
 }
 
-void pmm_init(size_t memory_size, physical_addr kernel_start, physical_addr kernel_end, memory_region *mmap_addr, size_t mmap_len)
+void pmm_init(size_t memory_size_kb, physical_addr kernel_start, physical_addr kernel_end, memory_region *mmap_addr, size_t mmap_len)
 {
-  _pmm_memory_size = memory_size;
-  _pmm_memory_map = (uint32_t *)kernel_end;
-  _pmm_max_blocks = (pmm_get_memory_size() * 1024) / PMMNGR_BLOCK_SIZE;
-  _pmm_used_blocks = pmm_get_block_count();
-  _pmm_memory_map_size = pmm_get_block_count() / PMMNGR_BLOCKS_PER_BYTE;
+  memory_size = memory_size_kb;
+  memory_map = (uint32_t *)kernel_end;
+  max_frames = (pmm_get_memory_size() * 1024) / FRAME_SIZE;
+  used_frames = pmm_get_frames_count();
+  memory_map_size = pmm_get_frames_count() / FRAMES_PER_BYTE;
 
   // By default, all of memory is in use
-  memset(_pmm_memory_map, 0xffffffff, pmm_get_block_count() / PMMNGR_BLOCKS_PER_BYTE);
+  memset(memory_map, 0xff, pmm_get_frames_count() / FRAMES_PER_BYTE);
 
   memory_region *region = mmap_addr;
   size_t regions_count = mmap_len / sizeof(memory_region);
@@ -177,45 +174,45 @@ void pmm_init(size_t memory_size, physical_addr kernel_start, physical_addr kern
   pmm_deinit_region(kernel_start, kernel_end - kernel_start);
 
   // exclude memory map bitmap
-  pmm_deinit_region((physical_addr)_pmm_memory_map, _pmm_memory_map_size);
+  pmm_deinit_region((physical_addr)memory_map, memory_map_size);
 
   kprintf("(PMM) Initialized with %d KB\n", memory_size);
-  kprintf("(PMM) Allocation blocks count: %d (block size: %d bytes)\n",
-          pmm_get_block_count(), pmm_get_block_size());
-  kprintf("(PMM) Free allocation blocks count: %d\n", pmm_get_free_block_count());
+  kprintf("(PMM) Allocation frames count: %d (frame size: %d bytes)\n",
+          pmm_get_frames_count(), pmm_get_frame_size());
+  kprintf("(PMM) Free allocation frames count: %d\n", pmm_get_free_frames_count());
 }
 
 void pmm_init_region(physical_addr base, size_t size)
 {
-  int align = base / PMMNGR_BLOCK_SIZE;
-  int blocks = size / PMMNGR_BLOCK_SIZE;
+  int align = base / FRAME_SIZE;
+  int frames = size / FRAME_SIZE;
 
-  for (; blocks > 0; blocks--)
+  for (; frames > 0; frames--)
   {
     mmap_unset(align++);
-    _pmm_used_blocks--;
+    used_frames--;
   }
 
-  mmap_set(0); // first block is always set. This insures allocs cant be 0
+  mmap_set(0); // first frame is always set. This insures allocs cant be 0
 }
 
 void pmm_deinit_region(physical_addr base, size_t size)
 {
-  int align = base / PMMNGR_BLOCK_SIZE;
-  int blocks = size / PMMNGR_BLOCK_SIZE;
+  int align = base / FRAME_SIZE;
+  int frames = size / FRAME_SIZE;
 
-  for (; blocks > 0; blocks--)
+  for (; frames > 0; frames--)
   {
     mmap_set(align++);
-    _pmm_used_blocks++;
+    used_frames++;
   }
 
-  mmap_set(0); // first block is always set. This insures allocs cant be 0
+  mmap_set(0); // first frame is always set. This insures allocs cant be 0
 }
 
-void *pmm_alloc_block()
+void *pmm_alloc_frame()
 {
-  if (pmm_get_free_block_count() <= 0)
+  if (pmm_get_free_frames_count() <= 0)
   {
     return NULL; // out of memory
   }
@@ -229,26 +226,26 @@ void *pmm_alloc_block()
 
   mmap_set(frame);
 
-  physical_addr address = frame * PMMNGR_BLOCK_SIZE;
+  physical_addr address = frame * FRAME_SIZE;
 
-  _pmm_used_blocks++;
+  used_frames++;
 
   return (void *)address;
 }
 
-void pmm_free_block(void *block)
+void pmm_free_frame(void *frame)
 {
-  physical_addr address = (physical_addr)block;
-  int frame = address / PMMNGR_BLOCK_SIZE;
+  physical_addr address = (physical_addr)frame;
+  int frame_num = address / FRAME_SIZE;
 
-  mmap_unset(frame);
+  mmap_unset(frame_num);
 
-  _pmm_used_blocks--;
+  used_frames--;
 }
 
-void *pmm_alloc_blocks(size_t size)
+void *pmm_alloc_frames(size_t size)
 {
-  if (pmm_get_free_block_count() <= size)
+  if (pmm_get_free_frames_count() <= size)
   {
     return NULL; // not enough space
   }
@@ -265,49 +262,49 @@ void *pmm_alloc_blocks(size_t size)
     mmap_set(frame + i);
   }
 
-  physical_addr address = frame * PMMNGR_BLOCK_SIZE;
+  physical_addr address = frame * FRAME_SIZE;
 
-  _pmm_used_blocks += size;
+  used_frames += size;
 
   return (void *)address;
 }
 
-void pmm_free_blocks(void *block, size_t size)
+void pmm_free_frames(void *frame, size_t size)
 {
-  physical_addr address = (physical_addr)block;
-  int frame = address / PMMNGR_BLOCK_SIZE;
+  physical_addr address = (physical_addr)frame;
+  int frame_num = address / FRAME_SIZE;
 
   for (uint32_t i = 0; i < size; i++)
   {
-    mmap_unset(frame + i);
+    mmap_unset(frame_num + i);
   }
 
-  _pmm_used_blocks -= size;
+  used_frames -= size;
 }
 
 size_t pmm_get_memory_size()
 {
-  return _pmm_memory_size;
+  return memory_size;
 }
 
-uint32_t pmm_get_block_count()
+uint32_t pmm_get_frames_count()
 {
-  return _pmm_max_blocks;
+  return max_frames;
 }
 
-uint32_t pmm_get_used_block_count()
+uint32_t pmm_get_used_frames_count()
 {
-  return _pmm_used_blocks;
+  return used_frames;
 }
 
-uint32_t pmm_get_free_block_count()
+uint32_t pmm_get_free_frames_count()
 {
-  return _pmm_max_blocks - _pmm_used_blocks;
+  return max_frames - used_frames;
 }
 
-uint32_t pmm_get_block_size()
+uint32_t pmm_get_frame_size()
 {
-  return PMMNGR_BLOCK_SIZE;
+  return FRAME_SIZE;
 }
 
 void pmm_enable_paging(bool set)
