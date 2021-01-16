@@ -105,7 +105,7 @@ void vmm_map_page(void *phys, void *virt)
   pdirectory *directory = vmm_get_directory();
 
   // get page table
-  pd_entry *directory_entry = &directory->entries[PAGE_DIRECTORY_INDEX((uint32_t)virt)];
+  pd_entry *directory_entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)virt);
 
   if ((*directory_entry & PTE_PRESENT) != PTE_PRESENT)
   {
@@ -121,7 +121,7 @@ void vmm_map_page(void *phys, void *virt)
     memset(table, 0, sizeof(ptable));
 
     // create a new entry
-    pd_entry *entry = &directory->entries[PAGE_DIRECTORY_INDEX((uint32_t)virt)];
+    pd_entry *entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)virt);
 
     // map in the table
     pd_entry_add_attribute(entry, PDE_PRESENT);
@@ -133,7 +133,7 @@ void vmm_map_page(void *phys, void *virt)
   ptable *table = (ptable *)PAGE_GET_PHYSICAL_ADDRESS(directory_entry);
 
   // get page
-  pt_entry *page = &table->entries[PAGE_TABLE_INDEX((uint32_t)virt)];
+  pt_entry *page = vmm_ptable_lookup_entry(table, (virtual_addr)virt);
 
   // map it in
   pt_entry_set_frame(page, (physical_addr)phys);
@@ -165,7 +165,7 @@ void vmm_init()
     pt_entry_set_frame(&page, frame);
 
     // ...and add it to the page table
-    higher_half_page->entries[PAGE_TABLE_INDEX(virt)] = page;
+    *vmm_ptable_lookup_entry(higher_half_page, (virtual_addr)virt) = page;
   }
 
   // create default directory table
@@ -179,7 +179,7 @@ void vmm_init()
   // clear directory table and set it as current
   memset(directory, 0, sizeof(pdirectory));
 
-  pd_entry *higher_half_entry = &directory->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRTUAL_BASE)];
+  pd_entry *higher_half_entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)KERNEL_VIRTUAL_BASE);
 
   pd_entry_add_attribute(higher_half_entry, PDE_PRESENT);
   pd_entry_add_attribute(higher_half_entry, PDE_WRITABLE);
