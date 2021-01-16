@@ -72,9 +72,20 @@ void kmain(unsigned long magic, multiboot_info *mbi)
 
   kprint("\nType command or HELP: \n> ");
 
-  // Uncomment to raise Page Fault exception
-  // int *data = (int *)0x0;
-  // *data = 12;
+  ptable *frame = (ptable *)pmm_alloc_frame();
+
+  vmm_map_page((physical_addr)frame, 0xeeeeeeee);
+
+  uint32_t *data = (uint32_t *)0xeeeeeeee;
+  *data = 28;
+
+  kprintf("data: %d\n", *data);
+
+  vmm_unmap_page(0xeeeeeeee);
+
+  // uncomment to raise Page Fault Exception
+  // *data = 13;
+  // kprintf("data: %d\n", *data);
 
   for (;;)
     ;

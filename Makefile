@@ -29,7 +29,7 @@ CFLAGS := -I$(INC_DIR) \
 	-fno-exceptions \
 	-m32
 
-QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk -monitor stdio
+QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk # -monitor stdio
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug

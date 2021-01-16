@@ -30,7 +30,7 @@ inline pt_entry *vmm_ptable_lookup_entry(ptable *page, virtual_addr address)
 {
   if (page)
   {
-    return &page->entries[PAGE_TABLE_INDEX(address)];
+    return &page->entries[vmm_virt_to_index(address).page_table];
   }
 
   return NULL;
@@ -40,7 +40,7 @@ inline pd_entry *vmm_pdirectory_lookup_entry(pdirectory *page, virtual_addr addr
 {
   if (page)
   {
-    return &page->entries[PAGE_DIRECTORY_INDEX(address)];
+    return &page->entries[vmm_virt_to_index(address).page_directory];
   }
 
   return NULL;
@@ -99,45 +99,75 @@ void vmm_free_page(pt_entry *entry)
   pt_entry_remove_attribute(entry, PTE_PRESENT);
 }
 
-void vmm_map_page(void *phys, void *virt)
+void vmm_map_page(physical_addr phys, virtual_addr virt)
 {
-  // get page directory
-  pdirectory *directory = vmm_get_directory();
+  pdirectory *directory = (pdirectory *)0xfffff000;
+  page_index index = vmm_virt_to_index((virtual_addr)virt);
 
-  // get page table
-  pd_entry *directory_entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)virt);
-
-  if ((*directory_entry & PTE_PRESENT) != PTE_PRESENT)
+  if (directory->entries[index.page_directory] & PDE_PRESENT)
   {
-    // page table not present, allocate it
-    ptable *table = (ptable *)pmm_alloc_frame();
+    // page table exists
+    ptable *page_table = (ptable *)(0xffc00000 + (index.page_directory * 0x1000)); // virt addr of page table
 
-    if (!table)
+    if (!page_table->entries[index.page_table] & PTE_PRESENT)
     {
-      return;
+      // page isn't mapped
+      pt_entry_add_attribute(&page_table->entries[index.page_table], PTE_PRESENT);
+      pt_entry_add_attribute(&page_table->entries[index.page_table], PTE_WRITABLE);
+      pt_entry_set_frame(&page_table->entries[index.page_table], phys);
+    }
+  }
+  else
+  {
+    // doesn't exist, so alloc a page and add into pdir
+    ptable *new_page_table = (ptable *)pmm_alloc_frame();
+    ptable *page_table = (ptable *)(0xffc00000 + (index.page_directory * 0x1000)); // virt addr of page tbl
+
+    pd_entry_add_attribute(&directory->entries[index.page_directory], PDE_PRESENT);
+    pd_entry_add_attribute(&directory->entries[index.page_directory], PDE_WRITABLE);
+    pd_entry_set_frame(&directory->entries[index.page_directory], (physical_addr)new_page_table);
+
+    pt_entry_add_attribute(&page_table->entries[index.page_table], PTE_PRESENT);
+    pt_entry_add_attribute(&page_table->entries[index.page_table], PTE_WRITABLE);
+    pt_entry_set_frame(&page_table->entries[index.page_table], phys);
+  }
+}
+
+void vmm_unmap_page(virtual_addr virt)
+{
+  vmm_flush_tlb_entry(virt);
+
+  pdirectory *directory = (pdirectory *)0xfffff000;
+  page_index index = vmm_virt_to_index(virt); // get the PDE and PTE indexes for the addr
+
+  if (directory->entries[index.page_directory] & PDE_PRESENT)
+  {
+    ptable *page_table = (ptable *)(0xffc00000 + (index.page_directory * 0x1000));
+
+    if (page_table->entries[index.page_table] & PTE_PRESENT)
+    {
+      // page is mapped, so unmap it
+      pt_entry_remove_attribute(&page_table->entries[index.page_table], PTE_PRESENT);
     }
 
-    // clear page table
-    memset(table, 0, sizeof(ptable));
+    int i;
 
-    // create a new entry
-    pd_entry *entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)virt);
+    // check if there are any more present PTEs in this page table
+    for (i = 0; i < PAGES_PER_TABLE; i++)
+    {
+      if (page_table->entries[i] & PTE_PRESENT)
+      {
+        break;
+      }
+    }
 
-    // map in the table
-    pd_entry_add_attribute(entry, PDE_PRESENT);
-    pd_entry_add_attribute(entry, PDE_WRITABLE);
-    pd_entry_set_frame(entry, (physical_addr)table);
+    // if there are none, then free the space allocated to the page table and delete mappings
+    if (i == PAGES_PER_TABLE)
+    {
+      pmm_free_frame((void *)vmm_get_phys_addr(directory->entries[index.page_directory]));
+      pd_entry_remove_attribute(&directory->entries[index.page_directory], PDE_PRESENT);
+    }
   }
-
-  // get table
-  ptable *table = (ptable *)PAGE_GET_PHYSICAL_ADDRESS(directory_entry);
-
-  // get page
-  pt_entry *page = vmm_ptable_lookup_entry(table, (virtual_addr)virt);
-
-  // map it in
-  pt_entry_set_frame(page, (physical_addr)phys);
-  pt_entry_add_attribute(page, PTE_PRESENT);
 }
 
 void vmm_init()
@@ -152,7 +182,7 @@ void vmm_init()
     return;
   }
 
-  memset(higher_half_page, 0, sizeof(ptable));
+  vmm_ptable_clear(higher_half_page);
 
   // map first 4mb to 3gb base
   for (int i = 0, frame = 0x000000, virt = KERNEL_VIRTUAL_BASE; i < 1024; i++, frame += 4096, virt += 4096)
@@ -176,14 +206,25 @@ void vmm_init()
     return;
   }
 
-  // clear directory table and set it as current
-  memset(directory, 0, sizeof(pdirectory));
+  vmm_pdirectory_clear(directory);
 
   pd_entry *higher_half_entry = vmm_pdirectory_lookup_entry(directory, (virtual_addr)KERNEL_VIRTUAL_BASE);
 
   pd_entry_add_attribute(higher_half_entry, PDE_PRESENT);
   pd_entry_add_attribute(higher_half_entry, PDE_WRITABLE);
   pd_entry_set_frame(higher_half_entry, (physical_addr)higher_half_page);
+
+  /*
+    Make last PTE point to page directory itself (recursive page directory setup).
+
+    Allows us to change page tables while in paging mode:
+
+    - virt. address 0xffc00000 points to Page Table #0 (= PTE #0)
+    - virt. address 0xfffff000 points to Page Directory (= PDE #0)
+  */
+  pd_entry_add_attribute(&directory->entries[1023], PDE_PRESENT);
+  pd_entry_add_attribute(&directory->entries[1023], PDE_WRITABLE);
+  pd_entry_set_frame(&directory->entries[1023], (physical_addr)directory);
 
   // store current PDBR
   _current_pdbr = (physical_addr)&directory->entries;
@@ -193,6 +234,34 @@ void vmm_init()
 
   // enable paging
   pmm_enable_paging(true);
+}
+
+page_index vmm_virt_to_index(virtual_addr address)
+{
+  page_index index;
+
+  //align address to 4k (highest 20-bits of address)
+  address &= ~0xFFF;
+
+  index.page_directory = address >> 22; // each page table covers 0x400000 bytes in memory
+  index.page_table = (address << 10) >> 22;
+
+  return index;
+}
+
+void vmm_pdirectory_clear(pdirectory *directory)
+{
+  memset(directory, 0, sizeof(pdirectory));
+}
+
+void vmm_ptable_clear(ptable *table)
+{
+  memset(table, 0, sizeof(ptable));
+}
+
+physical_addr vmm_get_phys_addr(uint32_t addr)
+{
+  return addr & ~0xfff;
 }
 
 static void page_fault_handler(ir_params *params)
