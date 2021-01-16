@@ -1,6 +1,7 @@
 
 #include "kernel/memory/pm_manager.h"
 #include "kernel/drivers/display.h"
+#include "kernel/panic.h"
 #include "lib/string.h"
 
 // #define PRINT_MEMORY_MAP
@@ -145,6 +146,13 @@ void pmm_init(size_t memory_size_kb, physical_addr kernel_start, physical_addr k
 
   // By default, all of memory is in use
   memset(memory_map, 0xff, pmm_get_frames_count() / FRAMES_PER_BYTE);
+
+  uint32_t kernel_size = (kernel_end - kernel_start + memory_map_size);
+
+  if (kernel_size > 4 * 1024 * 1024)
+  {
+    kernel_panic("Kernel is bigger than 4MB (one page table). Increase mapped pages count.");
+  }
 
   memory_region *region = mmap_addr;
   size_t regions_count = mmap_len / sizeof(memory_region);

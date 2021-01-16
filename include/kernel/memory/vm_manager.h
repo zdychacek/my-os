@@ -15,10 +15,6 @@ typedef uint32_t virtual_addr;
 #define PAGES_PER_TABLE 1024
 #define PAGES_PER_DIR 1024
 
-#define PAGE_DIRECTORY_INDEX(x) (((x) >> 22))
-#define PAGE_TABLE_INDEX(x) (((x) >> 12) & 0x3ff)
-#define PAGE_GET_PHYSICAL_ADDRESS(x) (*x & ~0xfff)
-
 // page table
 typedef struct _ptable
 {
@@ -31,11 +27,21 @@ typedef struct _pdirectory
   pd_entry entries[PAGES_PER_DIR];
 } pdirectory;
 
+// helper indexer structure
+typedef struct _page_index
+{
+  uint32_t page_directory;
+  uint32_t page_table;
+} __attribute__((packed)) page_index;
+
 // initialize the memory manager
 extern void vmm_init();
 
-// maps phys to virtual address
-extern void vmm_map_page(void *phys, void *virt);
+// maps physical address into virtual memory
+void vmm_map_page(physical_addr phys, virtual_addr virt);
+
+// unmaps page from virtual memory
+void vmm_unmap_page(virtual_addr virt);
 
 // allocates a page in physical memory
 extern bool vmm_alloc_page(pt_entry *entry);
@@ -55,17 +61,17 @@ extern void vmm_flush_tlb_entry(virtual_addr address);
 // clears a page table
 extern void vmm_ptable_clear(ptable *table);
 
-// convert virtual address to page table index
-extern uint32_t vmm_ptable_virt_to_index(virtual_addr address);
-
 // get page entry from page table
 extern pt_entry *vmm_ptable_lookup_entry(ptable *table, virtual_addr address);
-
-// convert virtual address to page directory index
-extern uint32_t vmm_pdirectory_virt_to_index(virtual_addr address);
 
 // clears a page directory table
 extern void vmm_pdirectory_clear(pdirectory *directory);
 
 // get directory entry from directory table
 extern pd_entry *vmm_pdirectory_lookup_entry(pdirectory *directory, virtual_addr address);
+
+// convert virtual address to page directory and page table index
+extern page_index vmm_virt_to_index(virtual_addr address);
+
+// get physical address from page
+extern physical_addr vmm_get_phys_addr(uint32_t addr);
