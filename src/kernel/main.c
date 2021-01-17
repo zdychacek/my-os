@@ -87,7 +87,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // *data = 13;
   // kprintf("data: %d\n", *data);
 
-  for (;;)
+  while (true)
     ;
 }
 

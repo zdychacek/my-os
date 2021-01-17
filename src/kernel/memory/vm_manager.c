@@ -53,6 +53,9 @@ inline bool vmm_switch_directory(pdirectory *directory)
     return false;
   }
 
+  // store current PDBR
+  _current_pdbr = (physical_addr)&directory->entries;
+
   _current_directory = directory;
 
   pmm_load_PDBR(_current_pdbr);
@@ -73,27 +76,27 @@ pdirectory *vmm_get_directory()
 bool vmm_alloc_page(pt_entry *entry)
 {
   // allocate a free physical frame
-  void *page = pmm_alloc_frame();
+  void *frame = pmm_alloc_frame();
 
-  if (!page)
+  if (!frame)
   {
     return false;
   }
 
   // map it to the page
-  pt_entry_set_frame(entry, (physical_addr)page);
   pt_entry_add_attribute(entry, PTE_PRESENT);
+  pt_entry_set_frame(entry, (physical_addr)frame);
 
   return true;
 }
 
 void vmm_free_page(pt_entry *entry)
 {
-  void *page = (void *)pt_entry_get_frame(*entry);
+  void *frame = (void *)pt_entry_get_frame(*entry);
 
-  if (page)
+  if (frame)
   {
-    pmm_free_frame(page);
+    pmm_free_frame(frame);
   }
 
   pt_entry_remove_attribute(entry, PTE_PRESENT);
@@ -102,7 +105,7 @@ void vmm_free_page(pt_entry *entry)
 void vmm_map_page(physical_addr phys, virtual_addr virt)
 {
   pdirectory *directory = (pdirectory *)0xfffff000;
-  page_index index = vmm_virt_to_index((virtual_addr)virt);
+  page_index index = vmm_virt_to_index(virt);
 
   if (directory->entries[index.page_directory] & PDE_PRESENT)
   {
@@ -147,7 +150,7 @@ void vmm_unmap_page(virtual_addr virt)
     if (page_table->entries[index.page_table] & PTE_PRESENT)
     {
       // page is mapped, so unmap it
-      pt_entry_remove_attribute(&page_table->entries[index.page_table], PTE_PRESENT);
+      vmm_free_page(&page_table->entries[index.page_table]);
     }
 
     int i;
@@ -164,8 +167,7 @@ void vmm_unmap_page(virtual_addr virt)
     // if there are none, then free the space allocated to the page table and delete mappings
     if (i == PAGES_PER_TABLE)
     {
-      pmm_free_frame((void *)vmm_get_phys_addr(directory->entries[index.page_directory]));
-      pd_entry_remove_attribute(&directory->entries[index.page_directory], PDE_PRESENT);
+      vmm_free_page(&directory->entries[index.page_directory]);
     }
   }
 }
@@ -199,7 +201,7 @@ void vmm_init()
   }
 
   // create default directory table
-  pdirectory *directory = (pdirectory *)pmm_alloc_frames(2);
+  pdirectory *directory = (pdirectory *)pmm_alloc_frame();
 
   if (!directory)
   {
@@ -225,9 +227,6 @@ void vmm_init()
   pd_entry_add_attribute(&directory->entries[1023], PDE_PRESENT);
   pd_entry_add_attribute(&directory->entries[1023], PDE_WRITABLE);
   pd_entry_set_frame(&directory->entries[1023], (physical_addr)directory);
-
-  // store current PDBR
-  _current_pdbr = (physical_addr)&directory->entries;
 
   // switch to our page directory
   vmm_switch_directory(directory);
