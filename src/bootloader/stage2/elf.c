@@ -3,7 +3,6 @@
 #include "bootloader/stage2/elf.h"
 #include "bootloader/stage2/vga.h"
 #include "lib/string.h"
-#include "lib/memory.h"
 
 extern uint32_t HEAP_START;
 

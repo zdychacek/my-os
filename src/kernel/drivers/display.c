@@ -1,7 +1,6 @@
 #include "kernel/drivers/display.h"
 #include "kernel/hal/ports.h"
 #include "lib/types.h"
-#include "lib/memory.h"
 #include "lib/string.h"
 #include "lib/stdio.h"
 

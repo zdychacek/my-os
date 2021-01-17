@@ -1,17 +1,13 @@
 #pragma once
 
 #include "lib/types.h"
-#include "lib/types.h"
 
-typedef struct _alloc_t
-{
-    uint8_t status;
-    uint32_t size;
-} alloc_t;
+#define HEAP_START 0xc0400000
+#define HEAP_END 0xffbfffff
 
-// TODO(ondrej): move into physical memory manager
-void memory_init(uint32_t kernel_end);
-void memory_print_info();
+void *malloc(size_t size);
+void free(void *addr);
+void *realloc(void *addr, size_t size);
 
-void *kmalloc(size_t size);
-void kfree(void *mem);
+void heap_init();
+void heap_dump();

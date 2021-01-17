@@ -4,10 +4,10 @@ Hobby OS.
 
 ## TODO
 
-- memory management:
-  - paging
-  - virtual memory
-  - API:
+- [x] memory management:
+  - [x] paging
+  - [x] virtual memory
+  - [x] dynamic memory (heap):
     - [x] malloc
     - [x] free
 - persistent storage:
