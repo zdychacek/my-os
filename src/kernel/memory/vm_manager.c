@@ -15,9 +15,6 @@ extern void _flush_tlb_entry(virtual_addr address);
 // directory table represents 4gb address space
 #define DTABLE_ADDR_SPACE_SIZE 0x100000000
 
-// page sizes are 4k
-#define PAGE_SIZE 4096
-
 // current directory table
 pdirectory *_current_directory = NULL;
 
@@ -219,7 +216,7 @@ void vmm_init()
   /*
     Make last PTE point to page directory itself (recursive page directory setup).
 
-    Allows us to change page tables while in paging mode:
+    Allows us to access page tables while in paging mode:
 
     - virt. address 0xffc00000 points to Page Table #0 (= PTE #0)
     - virt. address 0xfffff000 points to Page Directory (= PDE #0)

@@ -15,6 +15,9 @@ typedef uint32_t virtual_addr;
 #define PAGES_PER_TABLE 1024
 #define PAGES_PER_DIR 1024
 
+// page sizes are 4k
+#define PAGE_SIZE 4096
+
 // page table
 typedef struct _ptable
 {

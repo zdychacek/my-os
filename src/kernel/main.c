@@ -12,7 +12,6 @@
 #include "kernel/memory/pm_manager.h"
 #include "kernel/memory/vm_manager.h"
 #include "lib/string.h"
-#include "lib/memory.h"
 
 // defined and exported from linker script
 extern uint32_t kernel_start;
@@ -46,17 +45,31 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // get memory size in KB
   uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;
 
+  // init physical memory manager
   pmm_init(phys_memory_avail, (physical_addr)&kernel_virt_start, (physical_addr)&kernel_virt_end,
            (memory_region *)mbi->mmap_addr, mbi->mmap_length);
 
+  // initi virtual memory manager and reload Page Directory
   vmm_init();
 
-  //memory_init((uint32_t)&kernel_end);
+  // init dynamic memory allocator
+  heap_init();
+
+  // reload Global Descriptor Table
   gdt_init();
+
+  // reload Interrupt Descriptor Table
   idt_init();
+
+  // init timer service
   timer_init(50);
+
+  // init keyboard input
   keyboard_init();
+
+  // init clock service
   rtc_init();
+
   // enable interrupts
   irq_init();
 
@@ -87,6 +100,22 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // *data = 13;
   // kprintf("data: %d\n", *data);
 
+  char *a = malloc(3 * sizeof(char));
+  heap_dump();
+  kprint("-------------------\n");
+
+  char *b = malloc(20 * sizeof(char));
+  heap_dump();
+  kprint("-------------------\n");
+
+  free(a);
+  heap_dump();
+  kprint("-------------------\n");
+
+  free(b);
+  heap_dump();
+  kprint("-------------------\n");
+
   while (true)
     ;
 }
@@ -107,33 +136,38 @@ void user_input(char *input)
     kprint("Stopping the CPU. Bye!\n");
     asm volatile("hlt");
   }
-  // else if (strcmp(input, "ALLOC") == 0)
-  // {
-  //   char *data = (char *)kmalloc(16);
+  else if (strcmp(input, "ALLOC") == 0)
+  {
+    char *data = (char *)malloc(500);
 
-  //   kfree(data);
-  // }
-  // else if (strcmp(input, "READ") == 0)
-  // {
-  //   uint32_t *data = (uint32_t *)kmalloc(sizeof(uint32_t) * 128);
+    unused(data);
 
-  //   // read the first sector from the disk
-  //   read_sectors_ATA_PIO(data, 0, 1);
+    // free(data);
 
-  //   kprintf("%x ", data[127] & 0xFF);
-  //   kprintf("%x ", (data[127] >> 8) & 0xFF);
-  //   kprintf("%x ", (data[127] >> 16) & 0xFF);
-  //   kprintf("%x\n", (data[127] >> 24) & 0xFF);
+    heap_dump();
+    kprint("-------------------\n");
+  }
+  else if (strcmp(input, "READ") == 0)
+  {
+    uint8_t *data = (uint8_t *)malloc(sizeof(uint8_t) * 512);
 
-  //   kfree(data);
-  // }
+    // read the first sector from the disk
+    read_sectors_ATA_PIO((uint32_t *)data, 0, 1);
+
+    // TODO: fix disk reading
+    kprintf("%x ", data[510]);
+    kprintf("%x ", data[511]);
+
+    free(data);
+  }
   else if (strcmp(input, "TIME") == 0)
   {
     rtc_print_time();
   }
   else if (strcmp(input, "MEM") == 0)
   {
-    memory_print_info();
+    // TODO: implement into physical memory manager
+    // memory_print_info();
   }
   else
   {
