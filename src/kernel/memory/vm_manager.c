@@ -121,7 +121,7 @@ void vmm_map_page(physical_addr phys, virtual_addr virt)
   {
     // doesn't exist, so alloc a page and add into pdir
     ptable *new_page_table = (ptable *)pmm_alloc_frame();
-    ptable *page_table = (ptable *)(0xffc00000 + (index.page_directory * 0x1000)); // virt addr of page tbl
+    ptable *page_table = (ptable *)(0xffc00000 + (index.page_directory * 0x1000)); // virt addr of page table
 
     pd_entry_add_attribute(&directory->entries[index.page_directory], PDE_PRESENT);
     pd_entry_add_attribute(&directory->entries[index.page_directory], PDE_WRITABLE);

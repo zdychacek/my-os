@@ -166,8 +166,10 @@ void user_input(char *input)
   }
   else if (strcmp(input, "MEM") == 0)
   {
-    // TODO: implement into physical memory manager
-    // memory_print_info();
+    kprintf("heap free space: %d bytes\n", heap_get_free_space());
+    kprintf("heap used space: %d bytes\n", heap_get_used_space());
+    kprintf("frames free count: %d\n", pmm_get_free_frames_count());
+    kprintf("frames used count: %d\n", pmm_get_used_frames_count());
   }
   else
   {

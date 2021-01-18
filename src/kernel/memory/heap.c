@@ -22,6 +22,9 @@ static block_header block_head = {HEAP_MAGIC, true, 0, NULL};
 // current program break
 static block_header *current_break;
 
+// heap lower boundary address
+static uint32_t heap_start;
+
 // heap upper boundary address
 static uint32_t heap_max;
 
@@ -321,10 +324,31 @@ void *realloc(void *addr, size_t size)
   return NULL;
 }
 
-void heap_init(uint32_t heap_start, uint32_t _heap_max)
+void heap_init(uint32_t _heap_start, uint32_t _heap_max)
 {
-  current_break = (block_header *)heap_start;
+  heap_start = _heap_start;
   heap_max = _heap_max;
+  current_break = (block_header *)_heap_start;
 
-  kprintf("Kernel heap starts at: 0x%x, max at: 0x%x\n", heap_start, _heap_max);
+  kprintf("Kernel heap starts at: 0x%x, max at: 0x%x\n", _heap_start, _heap_max);
+}
+
+size_t heap_get_used_space()
+{
+  size_t bytes_used = 0;
+
+  for (block_header *block = &block_head; block->next; block = block->next)
+  {
+    if (block->used)
+    {
+      bytes_used += block->size + sizeof(block_header);
+    }
+  }
+
+  return bytes_used;
+}
+
+size_t heap_get_free_space()
+{
+  return heap_max - heap_start - heap_get_used_space();
 }
