@@ -15,22 +15,36 @@ typedef struct _block_header
   struct _block_header *next;
 } block_header;
 
-static block_header *heap_top = (block_header *)HEAP_START;
 static block_header block_head = {HEAP_MAGIC, true, 0, NULL};
+
+// initialized from `heap_init()` call
+
+// current program break
+static block_header *current_break;
+
+// heap upper boundary address
+static uint32_t heap_max;
 
 // Create a free block of at least `size` bytes. It allocates the nearest greater multiply of 4096 bytes.
 
 // TODO: make it accept negative parameter to lower program break by unmapping unneeded pages
-// TODO: validate heap upper bound 0xffbfffff
 static block_header *more_heap(size_t size)
 {
-  block_header *new_block = heap_top;
+  block_header *new_block = current_break;
 
   // Number of pages needed to allocate.
   size_t pages_count =
       (size + sizeof(block_header) % PAGE_SIZE == 0)
           ? (size + sizeof(block_header)) / PAGE_SIZE
           : (size + sizeof(block_header)) / PAGE_SIZE + 1;
+
+  uint32_t new_break = (uint32_t)current_break + pages_count * PAGE_SIZE;
+
+  // check for heap overflow
+  if (new_break > heap_max)
+  {
+    kernel_panic("Heap out of memory (break: 0x%x > heap max: 0x%x)", new_break, heap_max);
+  }
 
   size_t allocated_pages_count;
 
@@ -45,9 +59,9 @@ static block_header *more_heap(size_t size)
       break;
     }
 
-    vmm_map_page((physical_addr)frame, (virtual_addr)heap_top);
+    vmm_map_page((physical_addr)frame, (virtual_addr)current_break);
 
-    heap_top = (block_header *)((char *)heap_top + PAGE_SIZE);
+    current_break = (block_header *)((char *)current_break + PAGE_SIZE);
   }
 
   new_block->size = PAGE_SIZE * allocated_pages_count - sizeof(block_header);
@@ -307,7 +321,10 @@ void *realloc(void *addr, size_t size)
   return NULL;
 }
 
-void heap_init()
+void heap_init(uint32_t heap_start, uint32_t _heap_max)
 {
-  kprint("Kernel heap initialized\n");
+  current_break = (block_header *)heap_start;
+  heap_max = _heap_max;
+
+  kprintf("Kernel heap starts at: 0x%x, max at: 0x%x\n", heap_start, _heap_max);
 }

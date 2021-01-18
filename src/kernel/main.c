@@ -53,7 +53,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   vmm_init();
 
   // init dynamic memory allocator
-  heap_init();
+  heap_init(HEAP_START, HEAP_END);
 
   // reload Global Descriptor Table
   gdt_init();
@@ -100,21 +100,21 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // *data = 13;
   // kprintf("data: %d\n", *data);
 
-  char *a = malloc(3 * sizeof(char));
-  heap_dump();
-  kprint("-------------------\n");
+  // char *a = malloc(3 * sizeof(char));
+  // heap_dump();
+  // kprint("-------------------\n");
 
-  char *b = malloc(20 * sizeof(char));
-  heap_dump();
-  kprint("-------------------\n");
+  // char *b = malloc(20 * sizeof(char));
+  // heap_dump();
+  // kprint("-------------------\n");
 
-  free(a);
-  heap_dump();
-  kprint("-------------------\n");
+  // free(a);
+  // heap_dump();
+  // kprint("-------------------\n");
 
-  free(b);
-  heap_dump();
-  kprint("-------------------\n");
+  // free(b);
+  // heap_dump();
+  // kprint("-------------------\n");
 
   while (true)
     ;
@@ -138,7 +138,7 @@ void user_input(char *input)
   }
   else if (strcmp(input, "ALLOC") == 0)
   {
-    char *data = (char *)malloc(500);
+    char *data = (char *)malloc(1000);
 
     unused(data);
 

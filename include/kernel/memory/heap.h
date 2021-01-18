@@ -9,5 +9,5 @@ void *malloc(size_t size);
 void free(void *addr);
 void *realloc(void *addr, size_t size);
 
-void heap_init();
+void heap_init(uint32_t heap_start, uint32_t heap_max);
 void heap_dump();
