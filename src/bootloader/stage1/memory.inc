@@ -1,13 +1,15 @@
-bits 16
+%ifndef MENORY_INC
+%define MENORY_INC
 
 %define MEMORY_MAP_ENTRY_LEN 24
+%define MISC_INT 0x15 ; Miscellaneous services BIOS Interrupt
 
 ;---------------------------------------------
 ; Bios function INT 15h, AX=E820h
 ; EBX must contain 0 on first call, and remain unchanged
 ; on subsequent calls until it is zero again.
 ;	ret\ ax=entries buffer length in bytes
-; ret\ [es:di]=memory map location to be placed at 
+; ret\ [es:di]=memory map location to be placed at
 ;---------------------------------------------
 get_memory_map:
   xor bp, bp
@@ -52,11 +54,11 @@ get_memory_map:
   jne .e820lp
 .done:
   clc	; there is "jc" on end of list to this point, so the carry must be cleared
-  ; Count entries buffer bytes length 
+  ; Count entries buffer bytes length
   mov ax, bp
   mov bx, MEMORY_MAP_ENTRY_LEN
   mul bx
-  
+
   ret
 .fail:
   stc	; "function unsupported" error exit
@@ -74,7 +76,7 @@ get_memory_size:
 	xor		ecx, ecx
 	xor		edx, edx
 	mov		ax, 0xe801
-	int		MISC_INT	
+	int		MISC_INT
 	jc		.error
 	cmp		ah, 0x86		;unsupported function
 	je		.error
@@ -95,3 +97,5 @@ get_memory_size:
 	pop		edx
 	pop		ecx
 	ret
+
+%endif
