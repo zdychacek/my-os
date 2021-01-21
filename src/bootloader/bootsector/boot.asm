@@ -22,7 +22,8 @@ _start:
   mov [drive], dl ; BIOS stores drive # in dl
 
   ; Load Stage 1
-  mov dword [packet + DAP.dest_offset], sector2
+  mov dword [packet + DAP.lba_lo], 2
+  mov dword [packet + DAP.dest_offset], superblock
   call read_disk
 
   mov si, loading_msg
@@ -33,7 +34,7 @@ _start:
 ; Stage 1 is responsible for loading Stage 2
 load_stage1:
   mov bx, loader_name
-  ; transform address from "0:offset" to "segment:0" format
+  ; Transform address from "0:offset" to "segment:0" format
   mov dx, STAGE1_POSITION >> 4
   call load_file
 
@@ -50,23 +51,5 @@ loading_msg db "Loading Stage 1...", NEWLINE, RETURN, NULL
 times 510-($-$$) db 0 ; Fill up the file with zeros
 dw SECTOR_END ; Last 2 bytes = Boot sector identifier
 
-;==============================================================================
-; END 	LBA SECTOR 0.
-;
-; This sector is unused. ext2 file system starts from LBA sector 2.
-;
-; BEGIN 	LBA SECTOR 1
-;==============================================================================
-sector2:
-
-times 1024-($-$$) db 0
-
-;==============================================================================
-; END 	LBA SECTOR 1.
-;
-; We can use the end of the file for a convenient label. Superblock starts at LBA 2, which is the end of this sector.
-;
-;
-; BEGIN 	LBA SECTOR 2
-;==============================================================================
+; Memory location where ext2 superblock will be loaded
 superblock:

@@ -28,7 +28,7 @@ _start:
 
 load_stage2:
   mov bx, loader_name
-  ; transform address from "0:offset" to "segment:0" fortmat
+  ; Transform address from "0:offset" to "segment:0" fortmat
   mov dx, STAGE2_POSITION >> 4
   call load_file
 
@@ -114,5 +114,5 @@ protected_mode:
   ; Call `stage2_main(multiboot_info)`
   call ecx
 
-; Load ext2 superblock data here
+; Memory location where ext2 superblock will be loaded
 superblock:

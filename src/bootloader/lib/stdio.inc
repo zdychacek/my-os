@@ -3,7 +3,7 @@
 
 %define VIDEO_INT 0x10 ; Video BIOS Interrupt
 %define DISK_INT 0x13 ; Disk BIOS Interrupt
-%define VIDEO_OUT 0x0e ; Teletype output command
+%define VIDEO_OUT 0xe ; Teletype output command
 %define DISK_READ 0x42 ; Disk extended read command
 %define DISK_EXT_CHECK 0x41 ; Disk extension check command
 %define DISK_EXT_CHECK_SIG1 0x55aa ; First extension check signature
