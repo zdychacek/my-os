@@ -1,3 +1,6 @@
+%ifndef MULTIBOOT_INFO_INC
+%define MULTIBOOT_INFO_INC
+
 struc multiboot_info
   .flags resd 1
   .memory_lo resd 1
@@ -48,3 +51,5 @@ boot_info: istruc multiboot_info
   at multiboot_info.vbe_interface_off, dw 0
   at multiboot_info.vbe_interface_len, dw 0
 iend
+
+%endif

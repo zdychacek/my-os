@@ -21,6 +21,10 @@
           "description": "Connect to QEMU remote debugger"
         },
         {
+          "text": "add-symbol-file ${workspaceRoot}/debug/bootsector.sym",
+          "description": "Add Bootsector Symbol File"
+        },
+        {
           "text": "add-symbol-file ${workspaceRoot}/debug/stage1.sym",
           "description": "Add Bootloader Stage 1 Symbol File"
         },
