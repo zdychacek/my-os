@@ -3,13 +3,19 @@
 %include "src/bootloader/lib/constants.inc"
 
 %define MULTIBOOT_FLAGS_MEM 1
-%define MULTIBOOT_FLAGS_BOOTDEVICE 0b10
-%define MULTIBOOT_FLAGS_MMAP 0b100000
-%define MULTIBOOT_FLAGS (MULTIBOOT_FLAGS_MEM | MULTIBOOT_FLAGS_BOOTDEVICE | MULTIBOOT_FLAGS_MMAP)
+%define MULTIBOOT_FLAGS_BOOTDEVICE 1 << 2
+%define MULTIBOOT_FLAGS_MMAP 1 << 7
+%define MULTIBOOT_FLAGS_VBE 1 << 12
+
 %define STAGE2_POSITION 0x50000 ; Loaded Stage 2 position
 %define STACK_POINTER 0x300000 ; The initial stack pointer for Stage 2 loader
+
 %define GDT_CODE_OFFSET 0x8 ; Offset to GDT code segment
 %define GDT_DATA_OFFSET 0x10 ; Offset to GDT data segment
+
+%define DISPLAY_RES_X 1920
+%define DISPLAY_RES_Y 1080
+%define DISPLAY_BPP 32
 
 global _start
 
@@ -44,7 +50,7 @@ protected_mode_enter:
   mov gs, ax
 
   ; Set multiboot info flags
-  mov dword [boot_info + multiboot_info.flags], MULTIBOOT_FLAGS
+  mov dword [boot_info + multiboot_info.flags], MULTIBOOT_FLAGS_MEM | MULTIBOOT_FLAGS_BOOTDEVICE | MULTIBOOT_FLAGS_MMAP | MULTIBOOT_FLAGS_VBE
 
   ; Set boot device
   mov [boot_info + multiboot_info.boot_device], dl
@@ -71,6 +77,13 @@ protected_mode_enter:
   call get_memory_map
   mov word [boot_info + multiboot_info.mmap_length], ax
 
+  ; set VBE mode
+  mov ax, DISPLAY_RES_X
+  mov bx, DISPLAY_RES_Y
+  mov cl, DISPLAY_BPP
+  call vbe_set_mode
+  mov word [boot_info + multiboot_info.vbe_mode_info], vbe_screen
+
   ; Enter Protected Mode
   cli
   mov eax, cr0
@@ -88,6 +101,7 @@ loading_msg db "Loading Stage 2...", NEWLINE, RETURN, NULL
 %include "src/bootloader/stage1/a20.inc"
 %include "src/bootloader/stage1/memory.inc"
 %include "src/bootloader/stage1/multiboot_info.inc"
+%include "src/bootloader/stage1/vesa.inc"
 %include "src/bootloader/stage1/gdt.inc"
 
 [bits 32]
