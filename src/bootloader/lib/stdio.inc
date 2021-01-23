@@ -1,7 +1,8 @@
 %ifndef STDIO_INC
 %define STDIO_INC
 
-%define VIDEO_INT 0x10 ; Video BIOS Interrupt
+%include "src/bootloader/lib/constants.inc"
+
 %define DISK_INT 0x13 ; Disk BIOS Interrupt
 %define VIDEO_OUT 0xe ; Teletype output command
 %define DISK_READ 0x42 ; Disk extended read command

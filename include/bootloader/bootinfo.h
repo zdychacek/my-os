@@ -26,12 +26,22 @@ typedef struct _multiboot_info
   uint16_t vbe_mode;
   uint32_t vbe_interface_addr;
   uint16_t vbe_interface_len;
-} multiboot_info;
+} __attribute__((packed)) multiboot_info;
+
+typedef struct _vbe_mode_info
+{
+  uint16_t width;
+  uint16_t height;
+  uint32_t framebuffer;
+  uint16_t pitch;
+  uint8_t bpp;
+  uint16_t bytes_per_pixel;
+} __attribute__((packed)) vbe_mode_info;
 
 #define MULTIBOOT_BOOTLOADER_MAGIC 0x2BADB002
 
 // Multiboot flags
 #define MULTIBOOT_FLAGS_MEM 1
-#define MULTIBOOT_FLAGS_BOOTDEVICE 0b10
-#define MULTIBOOT_FLAGS_MMAP 0b100000
-#define MULTIBOOT_FLAGS (MULTIBOOT_FLAGS_MEM | MULTIBOOT_FLAGS_BOOTDEVICE | MULTIBOOT_FLAGS_MMAP)
+#define MULTIBOOT_FLAGS_BOOTDEVICE 1 << 2
+#define MULTIBOOT_FLAGS_MMAP 1 << 7
+#define MULTIBOOT_FLAGS_VBE 1 << 12

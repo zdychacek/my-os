@@ -1,4 +1,3 @@
-#include "bootloader/bootinfo.h"
 #include "kernel/main.h"
 #include "kernel/hal/timer.h"
 #include "kernel/hal/idt.h"
@@ -11,6 +10,8 @@
 #include "kernel/memory/memory_region.h"
 #include "kernel/memory/pm_manager.h"
 #include "kernel/memory/vm_manager.h"
+#include "kernel/panic.h"
+#include "kernel/screen.h"
 #include "lib/string.h"
 
 // defined and exported from linker script
@@ -21,26 +22,43 @@ extern uint32_t kernel_virt_end;
 
 void kmain(unsigned long magic, multiboot_info *mbi)
 {
+  // TODO: deprecated, will be deleted
   display_init();
+
+  vbe_mode_info *mode_info = (vbe_mode_info *)mbi->vbe_mode_info;
+
+  // init screen
+  screen_init(mode_info);
+
+  kprint("Multiboot magic number OK\n");
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     kprintf("Invalid bootloader magic number: 0x%x\n", magic);
-
-    return;
   }
 
-  kprintf("Multiboot flags = 0x%x\n", mbi->flags);
+  kprint("Multiboot flags OK\n");
 
-  // TODO: fix use bitmask check
-  if (mbi->flags != MULTIBOOT_FLAGS)
+  if (!((mbi->flags & MULTIBOOT_FLAGS_BOOTDEVICE) &&
+        (mbi->flags & MULTIBOOT_FLAGS_MEM) &&
+        (mbi->flags & MULTIBOOT_FLAGS_MMAP) &&
+        (mbi->flags & MULTIBOOT_FLAGS_VBE)))
   {
-    kprintf("Bad multiboot flags (expecting: 0x%x, got: 0x%x)\n", MULTIBOOT_FLAGS, mbi->flags);
-
-    return;
+    kernel_panic("Bad multiboot flags (got: 0x%x)\n", mbi->flags);
   }
 
   kprintf("Boot device = 0x%x\n", mbi->boot_device);
+
+  int rect_size = 25;
+
+  screen_draw_rect(0, 0, rect_size, rect_size, 0xff0000);
+  screen_draw_rect(mode_info->width - rect_size, 0, rect_size, rect_size, 0x00ff00);
+  screen_draw_rect(mode_info->width - rect_size, mode_info->height - rect_size, rect_size, rect_size, 0xffff00);
+  screen_draw_rect(0, mode_info->height - rect_size, rect_size, rect_size, 0x00ffff);
+  screen_draw_rect(400, 400, 150, 150, 0xdeadbeef);
+
+  screen_draw_line(100, 100, 300, 300, 0xff0000);
+  screen_draw_line(300, 100, 100, 300, 0x0000ff);
 
   // get memory size in KB
   uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;
@@ -53,7 +71,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   vmm_init();
 
   // init dynamic memory allocator
-  heap_init(HEAP_START, HEAP_END);
+  heap_init(HEAP_VIRT_START, HEAP_VIRT_END);
 
   // reload Global Descriptor Table
   gdt_init();

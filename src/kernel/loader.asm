@@ -7,8 +7,11 @@ extern kmain
 ; addresses into physical addresses until paging is enabled. Note that this is not
 ; the virtual address where the kernel image itself is loaded -- just the amount that must
 ; be subtracted from a virtual address to get a physical address.
-KERNEL_VIRTUAL_BASE equ 0xC0000000 ; 3GB
+KERNEL_VIRTUAL_BASE equ 0xc0000000 ; 3GB
 KERNEL_PAGE_NUMBER equ (KERNEL_VIRTUAL_BASE >> 22) ; Page directory index of kernel's 4MB PTE.
+
+FRAMEBUFFER_VIRTUAL_BASE equ 0xff400000
+FRAMEBUFFER_PAGE_NUMBER equ (FRAMEBUFFER_VIRTUAL_BASE >> 22) ; Page directory index of framebuffer's 4MB PTE.
 
 section .data
 align 0x1000
@@ -24,15 +27,18 @@ boot_page_directory:
   times (KERNEL_PAGE_NUMBER - 1) dd 0 ; Pages before kernel space.
   ; This page directory entry defines a 4MB page containing the kernel.
   dd 0x00000083
-  times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0 ; Pages after the kernel image.
+  times (FRAMEBUFFER_PAGE_NUMBER - KERNEL_PAGE_NUMBER - 1) dd 0
+  ; Two page directory entries define a 8MB space for framebuffer.
+  dd 0xfd000083
+  dd 0xfd400083
+  times (1024 - FRAMEBUFFER_PAGE_NUMBER - 2) dd 0 ; Pages after the framebuffer space.
 
 ; setting up entry point for linker
-loader equ (_loader - 0xC0000000)
+loader equ (_loader - 0xc0000000)
 global loader
 
 _loader:
-  ; NOTE: Until paging is set up, the code must be position-independent and use physical
-  ; addresses, not virtual ones!
+  ; NOTE: Until paging is set up, the code must be position-independent and use physical addresses, not virtual ones!
   mov edx, (boot_page_directory - KERNEL_VIRTUAL_BASE)
   mov cr3, edx ; Load Page Directory Base Register.
 
@@ -46,8 +52,7 @@ _loader:
 
   ; Start fetching instructions in kernel space.
   ; Since eip at this point holds the physical address of this command (approximately 0x00100000)
-  ; we need to do a long jump to the correct virtual address of start_in_higher_half which is
-  ; approximately 0xC0100000.
+  ; we need to do a long jump to the correct virtual address of start_in_higher_half which is approximately 0xc0100000.
   lea edx, [start_in_higher_half]
   jmp edx                                                     ; NOTE: Must be absolute jump!
 
@@ -58,8 +63,6 @@ start_in_higher_half:
   ; should be necessary. We now have a higher-half kernel.
   mov esp, stack + STACKSIZE ; set up the stack
 
-  ; pass Multiboot info structure -- WARNING: This is a physical address and may not be
-  ; in the first 4MB!
   push ebx ; multibootinfo structure pointer
   push ecx ; multibootinfo magic number
 
