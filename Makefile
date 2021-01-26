@@ -11,13 +11,13 @@ DEBUG_DIR := debug
 DEBUG_SYMBOL_EXT := sym
 BINARY_EXT := bin
 
-CC := i386-elf-gcc
-LD := i386-elf-ld
-STRIP := i386-elf-strip
-AR := i386-elf-ar
+CC := x86_64-elf-gcc
+LD := x86_64-elf-ld
+STRIP := x86_64-elf-strip
+AR := x86_64-elf-ar
 AS := nasm
-QEMU := qemu-system-i386
-GDB = i386-elf-gdb
+QEMU := qemu-system-x86_64
+GDB = gdb
 ARFLAGS := rcs
 CFLAGS := -I$(INC_DIR) \
 	-MMD \
@@ -29,7 +29,7 @@ CFLAGS := -I$(INC_DIR) \
 	-fno-exceptions \
 	-m32
 
-QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk # -monitor stdio
+QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk #-d int,cpu_reset# -monitor stdio
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug
@@ -71,6 +71,7 @@ BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
 BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/stage2.ld
 
 BOOT_STAGE2_LINK = $(LD) \
+	-m elf_i386 \
 	-T $(BOOT_STAGE2_LINK_FILE) \
 	-L$(RELEASE_DIR) \
 	-l$(subst lib,,$(LIB_FILE)) \
@@ -100,6 +101,7 @@ KERNEL_OBJ := $(KERNEL_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
 KERNEL_LINK_FILE = $(KERNEL_SRC_DIR)/kernel.ld
 
 KERNEL_LINK = $(LD) \
+	-m elf_i386 \
 	-T $(KERNEL_LINK_FILE) \
 	-L$(RELEASE_DIR) \
 	-l$(subst lib,,$(LIB_FILE)) \
@@ -152,6 +154,7 @@ gdb: $(DISK) \
 # BOOT SECTOR
 $(BOOT_SECTOR_RELEASE_FILE): $(BOOT_SECTOR_OBJ) | $(RELEASE_DIR)
 	$(LD) \
+		-m elf_i386 \
 		-Ttext=$(BOOT_SECTOR_POSITION) \
 		--oformat binary \
 		-o $@ $^
@@ -159,6 +162,7 @@ $(BOOT_SECTOR_RELEASE_FILE): $(BOOT_SECTOR_OBJ) | $(RELEASE_DIR)
 # BOOTLOADER STAGE 1
 $(BOOT_STAGE1_RELEASE_FILE): $(BOOT_STAGE1_OBJ) | $(RELEASE_DIR)
 	$(LD) \
+		-m elf_i386 \
 		-Ttext=$(BOOT_STAGE1_POSITION) \
 		--oformat binary \
 		-o $@ $^
@@ -169,12 +173,14 @@ $(BOOT_STAGE2_RELEASE_FILE): $(BOOT_STAGE2_OBJ) $(LIB_RELEASE_FILE) | $(RELEASE_
 
 $(BOOT_SECTOR_SYMBOL_FILE): $(BOOT_SECTOR_OBJ) | $(DEBUG_DIR)
 	$(LD) \
+		-m elf_i386 \
 		-Ttext=$(BOOT_SECTOR_POSITION) \
 		-o $@ $^
 	$(STRIP) $(STRIPFLAGS) $@
 
 $(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
 	$(LD) \
+		-m elf_i386 \
 		-Ttext=$(BOOT_STAGE1_POSITION) \
 		-o $@ $^
 	$(STRIP) $(STRIPFLAGS) $@
@@ -199,7 +205,7 @@ $(LIB_RELEASE_FILE): $(LIB_OBJ) | $(RELEASE_DIR)
 # TODO(ondrej): take *.inc files into account
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.asm | $(OBJ_DIR)
 	$(DIR_SENTINEL)
-	$(AS) $< -g -f elf -o $@
+	$(AS) $< -g -f elf32 -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(DIR_SENTINEL)
