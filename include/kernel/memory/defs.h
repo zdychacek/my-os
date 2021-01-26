@@ -7,7 +7,7 @@
 #define KERNEL_VIRT_END 0xc03fffff
 
 #define HEAP_VIRT_START 0xc0400000
-#define HEAP_VIRT_END 0xff3ffff
+#define HEAP_VIRT_END 0xff3fffff
 
 #define FRAMEBUFFER_VIRT_START 0xff400000
 #define FRAMEBUFFER_VIRT_END 0xffbfffff
