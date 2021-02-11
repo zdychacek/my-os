@@ -5,10 +5,22 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "ext2 Reader Launch",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/tools/ext2/ext2_reader",
+      "cwd": "${workspaceFolder}/tools/ext2",
+      "args": [],
+      "stopAtEntry": false,
+      "environment": [],
+      "MIMode": "lldb",
+      "preLaunchTask": "build_ext2_reader"
+    },
+    {
       "name": "Kernel",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/release/disk.img",
+      "program": "${workspaceRoot}/release/disk.bin",
       "cwd": "${workspaceRoot}",
       "args": [],
       "targetArchitecture": "x86",
@@ -21,7 +33,11 @@
           "description": "Connect to QEMU remote debugger"
         },
         {
-          "text": "add-symbol-file ${workspaceRoot}/debug/bootsector.sym",
+          "text": "add-symbol-file ${workspaceRoot}/debug/mbr.sym",
+          "description": "Add Master Boot Record Symbol File"
+        },
+        {
+          "text": "add-symbol-file ${workspaceRoot}/debug/vbr.sym",
           "description": "Add Bootsector Symbol File"
         },
         {

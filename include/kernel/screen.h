@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lib/types.h"
-#include "bootloader/bootinfo.h"
+#include "boot/bootinfo.h"
 
 void screen_init(vbe_mode_info *mode_info);
 void screen_draw_pixel(int x, int y, uint32_t color);

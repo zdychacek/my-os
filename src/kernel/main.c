@@ -25,10 +25,10 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // TODO: deprecated, will be deleted
   display_init();
 
-  vbe_mode_info *mode_info = (vbe_mode_info *)mbi->vbe_mode_info;
+  // vbe_mode_info *mode_info = (vbe_mode_info *)mbi->vbe_mode_info;
 
   // init screen
-  screen_init(mode_info);
+  // screen_init(mode_info);
 
   kprint("Multiboot magic number OK\n");
 
@@ -51,14 +51,14 @@ void kmain(unsigned long magic, multiboot_info *mbi)
 
   int rect_size = 25;
 
-  screen_draw_rect(0, 0, rect_size, rect_size, 0xff0000);
-  screen_draw_rect(mode_info->width - rect_size, 0, rect_size, rect_size, 0x00ff00);
-  screen_draw_rect(mode_info->width - rect_size, mode_info->height - rect_size, rect_size, rect_size, 0xffff00);
-  screen_draw_rect(0, mode_info->height - rect_size, rect_size, rect_size, 0x00ffff);
-  screen_draw_rect(400, 400, 150, 150, 0xdeadbeef);
+  // screen_draw_rect(0, 0, rect_size, rect_size, 0xff0000);
+  // screen_draw_rect(mode_info->width - rect_size, 0, rect_size, rect_size, 0x00ff00);
+  // screen_draw_rect(mode_info->width - rect_size, mode_info->height - rect_size, rect_size, rect_size, 0xffff00);
+  // screen_draw_rect(0, mode_info->height - rect_size, rect_size, rect_size, 0x00ffff);
+  // screen_draw_rect(400, 400, 150, 150, 0xdeadbeef);
 
-  screen_draw_line(100, 100, 300, 300, 0xff0000);
-  screen_draw_line(300, 100, 100, 300, 0x0000ff);
+  // screen_draw_line(100, 100, 300, 300, 0xff0000);
+  // screen_draw_line(300, 100, 100, 300, 0x0000ff);
 
   // get memory size in KB
   uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;

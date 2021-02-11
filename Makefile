@@ -29,24 +29,33 @@ CFLAGS := -I$(INC_DIR) \
 	-fno-exceptions \
 	-m32
 
-QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk -accel hvf# -monitor stdio
+QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk #-accel hvf -monitor stdio
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug
 FUSE_EXT2 := fuse-ext2
-FUSE_EXT2_FLAGS := -o rw+,allow_other,uid=$(shell id -u),gid=$(shell id -g)
+FUSE_EXT2_FLAGS := -o rw+
 
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
-BOOT_SRC_DIR := $(SRC_DIR)/bootloader
+BOOT_SRC_DIR := $(SRC_DIR)/boot
 
-# BOOTSECTOR
-BOOT_SECTOR_FILE := bootsector
-BOOT_SECTOR_SYMBOL_FILE = $(DEBUG_DIR)/$(BOOT_SECTOR_FILE).$(DEBUG_SYMBOL_EXT)
-BOOT_SECTOR_RELEASE_FILE = $(RELEASE_DIR)/$(BOOT_SECTOR_FILE).$(BINARY_EXT)
-BOOT_SECTOR_SRC_DIR := $(BOOT_SRC_DIR)/bootsector
-BOOT_SECTOR_SRC_ASM := $(wildcard $(BOOT_SECTOR_SRC_DIR)/*.asm)
-BOOT_SECTOR_OBJ := $(BOOT_SECTOR_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
-BOOT_SECTOR_POSITION := 0x7c00
+# MBR
+MBR_FILE := mbr
+MBR_SYMBOL_FILE = $(DEBUG_DIR)/$(MBR_FILE).$(DEBUG_SYMBOL_EXT)
+MBR_RELEASE_FILE = $(RELEASE_DIR)/$(MBR_FILE).$(BINARY_EXT)
+MBR_SRC_DIR := $(BOOT_SRC_DIR)
+MBR_SRC_ASM := $(MBR_SRC_DIR)/mbr.asm
+MBR_OBJ := $(MBR_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+MBR_POSITION := 0x0600
+
+# VOLUME BOOT RECORD
+VBR_FILE := vbr
+VBR_SYMBOL_FILE = $(DEBUG_DIR)/$(VBR_FILE).$(DEBUG_SYMBOL_EXT)
+VBR_RELEASE_FILE = $(RELEASE_DIR)/$(VBR_FILE).$(BINARY_EXT)
+VBR_SRC_DIR := $(BOOT_SRC_DIR)
+VBR_SRC_ASM := $(VBR_SRC_DIR)/vbr.asm
+VBR_OBJ := $(VBR_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+VBR_POSITION := 0x7c00
 
 # BOOTLOADER STAGE 1
 BOOT_STAGE1_FILE := stage1
@@ -108,11 +117,13 @@ KERNEL_LINK = $(LD) \
 	-o $@ $^
 
 # DISK
-DISK_NAME := disk.img
+DISK_NAME := disk.$(BINARY_EXT)
 DISK := $(RELEASE_DIR)/$(DISK_NAME)
-DISK_SIZE := 256k
+DISK_SIZE_MB := 16
 DISK_MOUNT_DIR := ./mount
 
+FS_IMAGE := $(RELEASE_DIR)/fs.$(BINARY_EXT)
+FS_START_SECTOR := 32697
 BOOT_CONF := boot.conf
 
 DIR_SENTINEL = @mkdir -p $(@D)
@@ -122,13 +133,15 @@ DIR_SENTINEL = @mkdir -p $(@D)
 run: $(DISK)
 	$(QEMU) $(QEMUFLAGS)
 
-compile: $(BOOT_SECTOR_RELEASE_FILE) \
+compile: $(MBR_RELEASE_FILE) \
+	$(VBR_RELEASE_FILE) \
 	$(BOOT_STAGE1_RELEASE_FILE) \
 	$(BOOT_STAGE2_RELEASE_FILE) \
 	$(KERNEL_RELEASE_FILE)
 
 dbg: $(DISK) \
-	$(BOOT_SECTOR_SYMBOL_FILE) \
+	$(MBR_SYMBOL_FILE) \
+	$(VBR_SYMBOL_FILE) \
 	$(BOOT_STAGE1_SYMBOL_FILE) \
 	$(BOOT_STAGE2_SYMBOL_FILE) \
 	$(KERNEL_SYMBOL_FILE)
@@ -137,7 +150,8 @@ dbg: $(DISK) \
 	$(QEMUFLAGS)
 
 gdb: $(DISK) \
-	$(BOOT_SECTOR_SYMBOL_FILE) \
+	$(MBR_SYMBOL_FILE) \
+	$(VBR_SYMBOL_FILE) \
 	$(BOOT_STAGE1_SYMBOL_FILE) \
 	$(BOOT_STAGE2_SYMBOL_FILE) \
 	$(KERNEL_SYMBOL_FILE)
@@ -146,44 +160,43 @@ gdb: $(DISK) \
 	$(GDB) \
 		-tui \
 		-ex "target remote localhost:1234" \
-		-ex "add-symbol-file $(BOOT_SECTOR_SYMBOL_FILE)" \
-		-ex "add-symbol-file $(BOOT_STAGE1_SYMBOL_FILE)" \
-		-ex "add-symbol-file $(BOOT_STAGE2_SYMBOL_FILE)" \
-		-ex "add-symbol-file $(KERNEL_SYMBOL_FILE)"
+		-ex "add-symbol-file $(MBR_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(VBR_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(BOOT_STAGE1_SYMBOL_FILE)"
+		# -ex "b main.asm:47" \
+		# -ex "c" \
+		# -ex "dump binary memory result.bin 0x8000 0x10800" \
+		# -ex "c"
+		# -ex "add-symbol-file $(BOOT_STAGE2_SYMBOL_FILE)" \
+		# -ex "add-symbol-file $(KERNEL_SYMBOL_FILE)" \
+
+# MBR
+$(MBR_RELEASE_FILE): $(MBR_OBJ) | $(RELEASE_DIR)
+	$(LD) -m elf_i386 -Ttext=$(MBR_POSITION) --oformat binary -o $@ $^
+
+$(MBR_SYMBOL_FILE): $(MBR_OBJ) | $(DEBUG_DIR)
+	$(LD) -m elf_i386 -Ttext=$(MBR_POSITION) -o $@ $^
+	$(STRIP) $(STRIPFLAGS) $@
 
 # BOOT SECTOR
-$(BOOT_SECTOR_RELEASE_FILE): $(BOOT_SECTOR_OBJ) | $(RELEASE_DIR)
-	$(LD) \
-		-m elf_i386 \
-		-Ttext=$(BOOT_SECTOR_POSITION) \
-		--oformat binary \
-		-o $@ $^
+$(VBR_RELEASE_FILE): $(VBR_OBJ) | $(RELEASE_DIR)
+	$(LD) -m elf_i386 -Ttext=$(VBR_POSITION) --oformat binary -o $@ $^
+
+$(VBR_SYMBOL_FILE): $(VBR_OBJ) | $(DEBUG_DIR)
+	$(LD) -m elf_i386 -Ttext=$(VBR_POSITION) -o $@ $^
+	$(STRIP) $(STRIPFLAGS) $@
 
 # BOOTLOADER STAGE 1
 $(BOOT_STAGE1_RELEASE_FILE): $(BOOT_STAGE1_OBJ) | $(RELEASE_DIR)
-	$(LD) \
-		-m elf_i386 \
-		-Ttext=$(BOOT_STAGE1_POSITION) \
-		--oformat binary \
-		-o $@ $^
+	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE1_POSITION) --oformat binary -o $@ $^
+
+$(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
+	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE1_POSITION) -o $@ $^
+	$(STRIP) $(STRIPFLAGS) $@
 
 # BOOTLOADER STAGE 2
 $(BOOT_STAGE2_RELEASE_FILE): $(BOOT_STAGE2_OBJ) $(LIB_RELEASE_FILE) | $(RELEASE_DIR)
 	$(BOOT_STAGE2_LINK) --oformat binary
-
-$(BOOT_SECTOR_SYMBOL_FILE): $(BOOT_SECTOR_OBJ) | $(DEBUG_DIR)
-	$(LD) \
-		-m elf_i386 \
-		-Ttext=$(BOOT_SECTOR_POSITION) \
-		-o $@ $^
-	$(STRIP) $(STRIPFLAGS) $@
-
-$(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
-	$(LD) \
-		-m elf_i386 \
-		-Ttext=$(BOOT_STAGE1_POSITION) \
-		-o $@ $^
-	$(STRIP) $(STRIPFLAGS) $@
 
 $(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) $(LIB_RELEASE_FILE) | $(DEBUG_DIR)
 	$(BOOT_STAGE2_LINK)
@@ -216,27 +229,46 @@ $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR) $(DISK_MOUNT_DIR):
 
 # DISK
 $(DISK): $(DISK_MOUNT_DIR) \
-	$(BOOT_CONF) \
-	$(BOOT_SECTOR_RELEASE_FILE) \
+	$(MBR_RELEASE_FILE) \
+	$(VBR_RELEASE_FILE) \
+	$(FS_IMAGE)
+
+	@echo "--- Creating empty disk image ---"
+	@dd if=/dev/zero of=$@ bs=1m count=$(DISK_SIZE_MB)
+	@LOOPBACK=$$(hdiutil attach -imagekey diskimage-class=CRawDiskImage -nomount $@ | head -n 1 | cut -d " " -f 1); \
+	echo "--- Disk image mounted at $$LOOPBACK ---"; \
+	echo "--- Creating ext2 partiton ---"; \
+	diskutil partitionDisk $$LOOPBACK MBR fuse-ext2 "My OS" 100%; \
+	echo "--- Writing master boot record ---"; \
+	./tools/write_mbr $(MBR_RELEASE_FILE) $@; \
+	echo "--- Writing filesystem ---"; \
+	dd if=$(FS_IMAGE) of=$@ bs=512 count=$(FS_START_SECTOR) seek=63 conv=notrunc; \
+	echo "--- Writing partition boot sector ---"; \
+	dd if=$(VBR_RELEASE_FILE) of=$@ bs=512 count=$(FS_START_SECTOR) seek=63 conv=notrunc; \
+	echo "--- Making ext2 partiton bootable ---"; \
+	./tools/set_byte $@ 446 0x80; \
+	echo "--- Unmounting disk image ---"; \
+	hdiutil detach $$LOOPBACK
+
+$(FS_IMAGE): $(BOOT_CONF) \
 	$(BOOT_STAGE1_RELEASE_FILE) \
 	$(BOOT_STAGE2_RELEASE_FILE) \
 	$(KERNEL_RELEASE_FILE)
 
-	dd if=/dev/zero of=$@ bs=1 count=$(DISK_SIZE)
+	dd if=/dev/zero of=$@ bs=512 count=$(FS_START_SECTOR)
 	mke2fs $@
-
-	dd if=$(BOOT_SECTOR_RELEASE_FILE) of=$@ conv=notrunc
-
 	$(FUSE_EXT2) $@ $(DISK_MOUNT_DIR) $(FUSE_EXT2_FLAGS)
-	sudo chown -R $(shell id -u):$(shell id -g) $(DISK_MOUNT_DIR)
 
-	cp $(BOOT_STAGE1_RELEASE_FILE) $(DISK_MOUNT_DIR)
-	cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
-	cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
-	cp $(BOOT_CONF) $(DISK_MOUNT_DIR)
+	sudo cp $(BOOT_STAGE1_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	sudo cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	sudo cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
+	sudo cp $(BOOT_CONF) $(DISK_MOUNT_DIR)
 
-	ls -al $(DISK_MOUNT_DIR)
 	umount -f $(DISK_MOUNT_DIR)
+
+flash: $(DISK)
+	@echo "Which disk? (default: /dev/disk2)" && read answer && answer=$${answer:-/dev/disk2}; \
+	sudo dd if=$(DISK) of=$${answer} bs=1m count=$(DISK_SIZE_MB)
 
 clean:
 	@rm -rfv $(RELEASE_DIR) \
