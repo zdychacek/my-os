@@ -10,8 +10,6 @@
 %define DISK_EXT_CHECK_SIG1 0x55aa ; First extension check signature
 %define DISK_EXT_CHECK_SIG2 0xaa55 ; Second extension check signature
 
-NL db NEWLINE, RETURN, NULL
-
 ; Prints string (null terminated) to the screen.
 ; si = pointer to number to print
 print:
@@ -100,6 +98,8 @@ lba_error:
   mov si, lba_error_msg
   call print
   jmp $
+
+NL db NEWLINE, RETURN, NULL
 
 disk_error_msg db "Disk error!", NEWLINE, RETURN, NULL
 lba_error_msg db "LBA error!", NEWLINE, RETURN, NULL

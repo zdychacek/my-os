@@ -30,22 +30,30 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // init screen
   // screen_init(mode_info);
 
-  kprint("Multiboot magic number OK\n");
+  kprintf("magic: %x\n", magic);
+  kprintf("mbi: %x\n", (uint32_t)mbi);
+  kprintf("flags: %x\n", (uint32_t)mbi->flags);
+  kprintf("MULTIBOOT_FLAGS_BOOTDEVICE: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_BOOTDEVICE);
+  kprintf("MULTIBOOT_FLAGS_MEM: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_MEM);
+  kprintf("MULTIBOOT_FLAGS_MMAP: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_MMAP);
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
-    kprintf("Invalid bootloader magic number: 0x%x\n", magic);
+    kernel_panic("Invalid bootloader magic number: 0x%x\n", magic);
   }
 
-  kprint("Multiboot flags OK\n");
+  kprint("Multiboot magic number OK\n");
 
   if (!((mbi->flags & MULTIBOOT_FLAGS_BOOTDEVICE) &&
         (mbi->flags & MULTIBOOT_FLAGS_MEM) &&
-        (mbi->flags & MULTIBOOT_FLAGS_MMAP) &&
-        (mbi->flags & MULTIBOOT_FLAGS_VBE)))
+        (mbi->flags & MULTIBOOT_FLAGS_MMAP) /*&&
+        (mbi->flags & MULTIBOOT_FLAGS_VBE)*/
+        ))
   {
     kernel_panic("Bad multiboot flags (got: 0x%x)\n", mbi->flags);
   }
+
+  kprint("Multiboot flags OK\n");
 
   kprintf("Boot device = 0x%x\n", mbi->boot_device);
 
