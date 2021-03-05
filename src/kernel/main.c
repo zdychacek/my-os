@@ -30,13 +30,6 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // init screen
   // screen_init(mode_info);
 
-  kprintf("magic: %x\n", magic);
-  kprintf("mbi: %x\n", (uint32_t)mbi);
-  kprintf("flags: %x\n", (uint32_t)mbi->flags);
-  kprintf("MULTIBOOT_FLAGS_BOOTDEVICE: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_BOOTDEVICE);
-  kprintf("MULTIBOOT_FLAGS_MEM: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_MEM);
-  kprintf("MULTIBOOT_FLAGS_MMAP: %x\n", (uint32_t)mbi->flags & MULTIBOOT_FLAGS_MMAP);
-
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
     kernel_panic("Invalid bootloader magic number: 0x%x\n", magic);
