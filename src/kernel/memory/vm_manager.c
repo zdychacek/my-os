@@ -199,18 +199,20 @@ static ptable *vmm_create_page_table(physical_addr phys_from, virtual_addr virt_
   return page_table;
 }
 
-void vmm_init()
+void vmm_init(multiboot_info *mbi)
 {
   idt_install_ir_handler(14, page_fault_handler);
 
   // map first 4mb to 3gb base
   ptable *higher_half_page_table = vmm_create_page_table(0, KERNEL_VIRT_START);
 
+  vbe_mode_info *mode_info = (vbe_mode_info *)mbi->vbe_mode_info;
+
   // allocates first 4MB for framebuffer
-  ptable *framebuffer_page_table1 = vmm_create_page_table(FRAMEBUFFER_PHYS_START, FRAMEBUFFER_VIRT_START);
+  ptable *framebuffer_page_table1 = vmm_create_page_table(mode_info->framebuffer, FRAMEBUFFER_VIRT_START);
 
   // allocates second 4MB for framebuffer
-  ptable *framebuffer_page_table2 = vmm_create_page_table(FRAMEBUFFER_PHYS_START + 0x400000, FRAMEBUFFER_VIRT_START + 0x400000);
+  ptable *framebuffer_page_table2 = vmm_create_page_table(mode_info->framebuffer + 0x400000, FRAMEBUFFER_VIRT_START + 0x400000);
 
   // create default directory table
   pdirectory *directory = (pdirectory *)pmm_alloc_frame();

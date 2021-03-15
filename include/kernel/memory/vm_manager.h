@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boot/bootinfo.h"
 #include "lib/types.h"
 #include "kernel/memory/vm_pte.h"
 #include "kernel/memory/vm_pde.h"
@@ -38,7 +39,7 @@ typedef struct _page_index
 } __attribute__((packed)) page_index;
 
 // initialize the memory manager
-extern void vmm_init();
+extern void vmm_init(multiboot_info *mbi);
 
 // maps physical address into virtual memory
 void vmm_map_page(physical_addr phys, virtual_addr virt);

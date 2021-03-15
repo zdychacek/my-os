@@ -38,11 +38,7 @@
         },
         {
           "text": "add-symbol-file ${workspaceRoot}/debug/vbr.sym",
-          "description": "Add Bootsector Symbol File"
-        },
-        {
-          "text": "add-symbol-file ${workspaceRoot}/debug/stage1.sym",
-          "description": "Add Bootloader Stage 1 Symbol File"
+          "description": "Add Volume Boot Record Symbol File"
         },
         {
           "text": "add-symbol-file ${workspaceRoot}/debug/stage2.sym",

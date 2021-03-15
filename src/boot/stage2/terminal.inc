@@ -186,11 +186,17 @@ terminal_write_success:
 ; IN = edx: number
 ; OUT = none
 terminal_write_hex:
+section .data
+  .hexstr db '0123456789ABCDEF'
+  .out_hextstr_prefix db '0x', NULL
+  .out_hextstr db '00000000', NULL
+
+section .text
   pusha
 
-  mov edi, out_hextstr
+  mov edi, .out_hextstr
   mov eax, edx
-  mov esi, hexstr
+  mov esi, .hexstr
   mov ecx, 8
 
   .hexloop:
@@ -203,9 +209,9 @@ terminal_write_hex:
     dec ecx
     jnz .hexloop
 
-  mov esi, out_hextstr_prefix
+  mov esi, .out_hextstr_prefix
   call terminal_write
-  mov esi, out_hextstr
+  mov esi, .out_hextstr
   call terminal_write
 
   popa
@@ -223,9 +229,52 @@ terminal_write_hex_line:
   popa
   ret
 
-hexstr db '0123456789ABCDEF'
-out_hextstr_prefix db '0x', NULL
-out_hextstr db '00000000', NULL
+; Print decimal representation of a number.
+; IN = eax: number
+; OUT = none
+terminal_write_dec:
+section .data
+  .out_decstr db '0000000000', NULL
+  .char_counter dw 0 ; to keep track of the size of the string
+
+section .text
+  pusha
+
+  mov word [.char_counter], 0
+  mov edi, .out_decstr     ; edi points to .out_decstring
+  add edi, 9           ; moved to the last element of string
+  xor edx, edx         ; clear edx for 64-bit division
+.while_not_zero:
+  mov ebx, 10          ; get ready to divide by 10
+  div ebx       ; divide by 10
+  add edx, '0'         ; converts to ascii char
+  mov byte [edi], dl    ; put it in sring
+  dec edi ; mov to next char in string
+  inc word [.char_counter]     ; increment char counter
+  xor edx, edx         ; clear edx
+  cmp eax, 0           ; is remainder of division 0?
+  jne .while_not_zero   ; no,  keep on looping
+
+  inc edi ; conversion,  finish,  bring edi
+  mov ecx, edi        ; back to beg of string. make ecx
+
+  mov esi, ecx
+  call terminal_write
+
+  popa
+  ret
+
+; Print decimal representation of a number with new line.
+; IN = edx: number
+; OUT = none
+terminal_write_dec_line:
+  pusha
+
+  call terminal_write_dec
+  call terminal_write_nl
+
+  popa
+  ret
 
 ; white on black
 terminal_color db 0x0f

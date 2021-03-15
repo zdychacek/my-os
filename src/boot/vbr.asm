@@ -2,7 +2,7 @@
 
 %include "src/boot/lib/constants.inc"
 
-%define STAGE1_POSITION 0x5000
+%define STAGE2_POSITION 0x5000
 %define REAL_STACK_BASE 0x7c00 ; Position stack base right before the bootloader.
 %define SECTOR_END 0xaa55 ; Bootsector end signature
 %define DISK_ZERO 0x80 ; First disk
@@ -31,25 +31,22 @@ _start:
   mov si, loading_msg
   call print
 
-  jmp load_stage1
+  jmp load_stage2
 
-; Stage 1 is responsible for loading Stage 2
-load_stage1:
-  mov si, loader_name
-  call print
-
+; Stage 2 is responsible for loading the kernel
+load_stage2:
   mov bx, loader_name
   ; Transform address from "0:offset" to "segment:0" format
-  mov dx, STAGE1_POSITION >> 4
+  mov dx, STAGE2_POSITION >> 4
   call load_file
 
   mov dl, [boot_drive]
 
-  jmp STAGE1_POSITION
+  jmp STAGE2_POSITION
 
 boot_drive db 0
-loader_name db "stage1.bin", NULL
-loading_msg db "Loading Stage 1...", NEWLINE, RETURN, NULL
+loader_name db "stage2.bin", NULL
+loading_msg db "Loading Stage 2...", NEWLINE, RETURN, NULL
 
 %include "src/boot/lib/stdio.inc"
 %include "src/boot/lib/string.inc"

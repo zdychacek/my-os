@@ -35,16 +35,10 @@ _start:
   jmp load_kernel
 
 load_kernel:
-  mov si, kernel_file_name
-  call print
-
   mov bx, kernel_file_name
   ; Transform address from "0:offset" to "segment:0" format
   mov dx, KERNEL_BINARY_POSITION >> 4
   call load_file
-
-  mov si, debug_msg
-  call print
 
   jmp protected_mode_enter ; Enter protected mode
 
@@ -87,11 +81,11 @@ protected_mode_enter:
   mov word [boot_info + multiboot_info.mmap_length], ax
 
   ; set VBE mode
-  ; mov ax, DISPLAY_RES_X
-  ; mov bx, DISPLAY_RES_Y
-  ; mov cl, DISPLAY_BPP
-  ; call vbe_set_mode
-  ; mov word [boot_info + multiboot_info.vbe_mode_info], vbe_screen
+  mov ax, DISPLAY_RES_X
+  mov bx, DISPLAY_RES_Y
+  mov cl, DISPLAY_BPP
+  call vbe_set_mode
+  mov word [boot_info + multiboot_info.vbe_mode_info], vbe_screen
 
   ; Enter Protected Mode
   cli
@@ -101,22 +95,23 @@ protected_mode_enter:
 
   jmp GDT_CODE_OFFSET:protected_mode
 
-debug_msg db "DEBUG", NEWLINE, RETURN, NULL
 boot_drive db 0
 loading_msg db "Loading kernel...", NEWLINE, RETURN, NULL
 kernel_file_name db "kernel.bin", NULL
 
 %include "src/boot/lib/ext2.inc"
 %include "src/boot/lib/stdio.inc"
-%include "src/boot/stage1/a20.inc"
-%include "src/boot/stage1/memory.inc"
-%include "src/boot/stage1/multiboot_info.inc"
-%include "src/boot/stage1/vesa.inc"
-%include "src/boot/stage1/gdt.inc"
+%include "src/boot/lib/terminal.inc"
+%include "src/boot/stage2/a20.inc"
+%include "src/boot/stage2/memory.inc"
+%include "src/boot/stage2/multiboot_info.inc"
+%include "src/boot/stage2/vesa.inc"
+%include "src/boot/stage2/gdt.inc"
 
 [bits 32]
 
-%include "src/boot/stage1/load_elf.inc"
+%include "src/boot/stage2/terminal.inc"
+%include "src/boot/stage2/load_elf.inc"
 
 protected_mode:
   xor eax, eax

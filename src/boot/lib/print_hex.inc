@@ -1,7 +1,7 @@
 %ifndef PRINT_HEX_INC
 %define PRINT_HEX_INC
 
-%include "src/boot/lib/stdio.inc"
+%include "src/boot/lib/terminal.inc"
 
 ; Prints number in hex form to the screen.
 ; si = number to print

@@ -1,7 +1,7 @@
 %ifndef LOAD_ELF_INC
 %define LOAD_ELF_INC
 
-%include "src/boot/stage1/terminal.inc"
+%include "src/boot/stage2/terminal.inc"
 
 ELF_MAGIC equ 0x464C457F
 

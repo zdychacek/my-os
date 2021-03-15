@@ -2,45 +2,13 @@
 %define STDIO_INC
 
 %include "src/boot/lib/constants.inc"
+%include "src/boot/lib/terminal.inc"
 
 %define DISK_INT 0x13 ; Disk BIOS Interrupt
-%define VIDEO_OUT 0xe ; Teletype output command
 %define DISK_READ 0x42 ; Disk extended read command
 %define DISK_EXT_CHECK 0x41 ; Disk extension check command
 %define DISK_EXT_CHECK_SIG1 0x55aa ; First extension check signature
 %define DISK_EXT_CHECK_SIG2 0xaa55 ; Second extension check signature
-
-; Prints string (null terminated) to the screen.
-; si = pointer to number to print
-print:
-  pusha
-
-; keep this in mind:
-; while (string[i] != 0) { print string[i]; i++ }
-
-; the comparison for string end (null byte)
-.start:
-  mov al, [si] ; 'si' is the base address for the string
-  cmp al, 0
-  je .done
-
-  ; the part where we print with the BIOS help
-  mov ah, VIDEO_OUT
-  int VIDEO_INT ; 'al' already contains the char
-
-  ; increment pointer and do next loop
-  add si, 1
-  jmp .start
-
-.done:
-  popa
-  ret
-
-; Prints new line to the screen.
-print_nl:
-  mov si, NL
-  call print
-  ret
 
 ; Disk Address Packet structure
 struc DAP
@@ -98,8 +66,6 @@ lba_error:
   mov si, lba_error_msg
   call print
   jmp $
-
-NL db NEWLINE, RETURN, NULL
 
 disk_error_msg db "Disk error!", NEWLINE, RETURN, NULL
 lba_error_msg db "LBA error!", NEWLINE, RETURN, NULL

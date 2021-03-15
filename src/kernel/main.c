@@ -1,3 +1,4 @@
+#include "boot/bootinfo.h"
 #include "kernel/main.h"
 #include "kernel/hal/timer.h"
 #include "kernel/hal/idt.h"
@@ -25,10 +26,8 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // TODO: deprecated, will be deleted
   display_init();
 
-  // vbe_mode_info *mode_info = (vbe_mode_info *)mbi->vbe_mode_info;
-
   // init screen
-  // screen_init(mode_info);
+  screen_init((vbe_mode_info *)mbi->vbe_mode_info);
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
@@ -39,9 +38,8 @@ void kmain(unsigned long magic, multiboot_info *mbi)
 
   if (!((mbi->flags & MULTIBOOT_FLAGS_BOOTDEVICE) &&
         (mbi->flags & MULTIBOOT_FLAGS_MEM) &&
-        (mbi->flags & MULTIBOOT_FLAGS_MMAP) /*&&
-        (mbi->flags & MULTIBOOT_FLAGS_VBE)*/
-        ))
+        (mbi->flags & MULTIBOOT_FLAGS_MMAP) &&
+        (mbi->flags & MULTIBOOT_FLAGS_VBE)))
   {
     kernel_panic("Bad multiboot flags (got: 0x%x)\n", mbi->flags);
   }
@@ -49,17 +47,6 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   kprint("Multiboot flags OK\n");
 
   kprintf("Boot device = 0x%x\n", mbi->boot_device);
-
-  int rect_size = 25;
-
-  // screen_draw_rect(0, 0, rect_size, rect_size, 0xff0000);
-  // screen_draw_rect(mode_info->width - rect_size, 0, rect_size, rect_size, 0x00ff00);
-  // screen_draw_rect(mode_info->width - rect_size, mode_info->height - rect_size, rect_size, rect_size, 0xffff00);
-  // screen_draw_rect(0, mode_info->height - rect_size, rect_size, rect_size, 0x00ffff);
-  // screen_draw_rect(400, 400, 150, 150, 0xdeadbeef);
-
-  // screen_draw_line(100, 100, 300, 300, 0xff0000);
-  // screen_draw_line(300, 100, 100, 300, 0x0000ff);
 
   // get memory size in KB
   uint32_t phys_memory_avail = 1024 + mbi->memory_lo + mbi->memory_hi * 64;
@@ -69,7 +56,7 @@ void kmain(unsigned long magic, multiboot_info *mbi)
            (memory_region *)mbi->mmap_addr, mbi->mmap_length);
 
   // initi virtual memory manager and reload Page Directory
-  vmm_init();
+  vmm_init(mbi);
 
   // init dynamic memory allocator
   heap_init(HEAP_VIRT_START, HEAP_VIRT_END);
@@ -134,6 +121,8 @@ void kmain(unsigned long magic, multiboot_info *mbi)
   // free(b);
   // heap_dump();
   // kprint("-------------------\n");
+
+  screen_draw_rect(0, 0, 25, 25, 0xff0000);
 
   while (true)
     ;

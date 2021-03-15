@@ -29,7 +29,7 @@ CFLAGS := -I$(INC_DIR) \
 	-fno-exceptions \
 	-m32
 
-QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk # -monitor stdio #-accel hvf
+QEMUFLAGS = -drive file=$(DISK),format=raw,index=1,media=disk -monitor stdio #-accel hvf
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug
@@ -57,34 +57,14 @@ VBR_SRC_ASM := $(VBR_SRC_DIR)/vbr.asm
 VBR_OBJ := $(VBR_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
 VBR_POSITION := 0x7c00
 
-# BOOTLOADER STAGE 1
-BOOT_STAGE1_FILE := stage1
-BOOT_STAGE1_SYMBOL_FILE = $(DEBUG_DIR)/$(BOOT_STAGE1_FILE).$(DEBUG_SYMBOL_EXT)
-BOOT_STAGE1_RELEASE_FILE = $(RELEASE_DIR)/$(BOOT_STAGE1_FILE).$(BINARY_EXT)
-BOOT_STAGE1_SRC_DIR := $(BOOT_SRC_DIR)/stage1
-BOOT_STAGE1_SRC_ASM := $(wildcard $(BOOT_STAGE1_SRC_DIR)/*.asm)
-BOOT_STAGE1_OBJ := $(BOOT_STAGE1_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
-BOOT_STAGE1_POSITION := 0x5000
-
 # BOOTLOADER STAGE 2
 BOOT_STAGE2_FILE := stage2
-BOOT_STAGE2_SYMBOL_FILE := $(DEBUG_DIR)/$(BOOT_STAGE2_FILE).$(DEBUG_SYMBOL_EXT)
-BOOT_STAGE2_RELEASE_FILE := $(RELEASE_DIR)/$(BOOT_STAGE2_FILE).$(BINARY_EXT)
+BOOT_STAGE2_SYMBOL_FILE = $(DEBUG_DIR)/$(BOOT_STAGE2_FILE).$(DEBUG_SYMBOL_EXT)
+BOOT_STAGE2_RELEASE_FILE = $(RELEASE_DIR)/$(BOOT_STAGE2_FILE).$(BINARY_EXT)
 BOOT_STAGE2_SRC_DIR := $(BOOT_SRC_DIR)/stage2
 BOOT_STAGE2_SRC_ASM := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.asm)
-BOOT_STAGE2_SRC_C := $(wildcard $(BOOT_STAGE2_SRC_DIR)/*.c)
-
-BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_C:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o) \
-				$(BOOT_STAGE2_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
-
-BOOT_STAGE2_LINK_FILE := $(BOOT_STAGE2_SRC_DIR)/stage2.ld
-
-BOOT_STAGE2_LINK = $(LD) \
-	-m elf_i386 \
-	-T $(BOOT_STAGE2_LINK_FILE) \
-	-L$(RELEASE_DIR) \
-	-l$(subst lib,,$(LIB_FILE)) \
-	-o $@ $(filter %/main.o, $^) $(filter-out %/main.o, $^)
+BOOT_STAGE2_OBJ := $(BOOT_STAGE2_SRC_ASM:$(SRC_DIR)/%.asm=$(OBJ_DIR)/%.o)
+BOOT_STAGE2_POSITION := 0x5000
 
 # LIBRARY
 LIB_FILE := libstd
@@ -135,14 +115,12 @@ run: $(DISK)
 
 compile: $(MBR_RELEASE_FILE) \
 	$(VBR_RELEASE_FILE) \
-	$(BOOT_STAGE1_RELEASE_FILE) \
 	$(BOOT_STAGE2_RELEASE_FILE) \
 	$(KERNEL_RELEASE_FILE)
 
 dbg: $(DISK) \
 	$(MBR_SYMBOL_FILE) \
 	$(VBR_SYMBOL_FILE) \
-	$(BOOT_STAGE1_SYMBOL_FILE) \
 	$(BOOT_STAGE2_SYMBOL_FILE) \
 	$(KERNEL_SYMBOL_FILE)
 	$(QEMU) \
@@ -152,7 +130,6 @@ dbg: $(DISK) \
 gdb: $(DISK) \
 	$(MBR_SYMBOL_FILE) \
 	$(VBR_SYMBOL_FILE) \
-	$(BOOT_STAGE1_SYMBOL_FILE) \
 	$(BOOT_STAGE2_SYMBOL_FILE) \
 	$(KERNEL_SYMBOL_FILE)
 
@@ -162,13 +139,8 @@ gdb: $(DISK) \
 		-ex "target remote localhost:1234" \
 		-ex "add-symbol-file $(MBR_SYMBOL_FILE)" \
 		-ex "add-symbol-file $(VBR_SYMBOL_FILE)" \
-		-ex "add-symbol-file $(BOOT_STAGE1_SYMBOL_FILE)"
-		# -ex "b main.asm:47" \
-		# -ex "c" \
-		# -ex "dump binary memory result.bin 0x8000 0x10800" \
-		# -ex "c"
-		# -ex "add-symbol-file $(BOOT_STAGE2_SYMBOL_FILE)" \
-		# -ex "add-symbol-file $(KERNEL_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(BOOT_STAGE2_SYMBOL_FILE)" \
+		-ex "add-symbol-file $(KERNEL_SYMBOL_FILE)" \
 
 # MBR
 $(MBR_RELEASE_FILE): $(MBR_OBJ) | $(RELEASE_DIR)
@@ -187,19 +159,11 @@ $(VBR_SYMBOL_FILE): $(VBR_OBJ) | $(DEBUG_DIR)
 	$(STRIP) $(STRIPFLAGS) $@
 
 # BOOTLOADER STAGE 1
-$(BOOT_STAGE1_RELEASE_FILE): $(BOOT_STAGE1_OBJ) | $(RELEASE_DIR)
-	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE1_POSITION) --oformat binary -o $@ $^
+$(BOOT_STAGE2_RELEASE_FILE): $(BOOT_STAGE2_OBJ) | $(RELEASE_DIR)
+	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE2_POSITION) --oformat binary -o $@ $^
 
-$(BOOT_STAGE1_SYMBOL_FILE): $(BOOT_STAGE1_OBJ) | $(DEBUG_DIR)
-	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE1_POSITION) -o $@ $^
-	$(STRIP) $(STRIPFLAGS) $@
-
-# BOOTLOADER STAGE 2
-$(BOOT_STAGE2_RELEASE_FILE): $(BOOT_STAGE2_OBJ) $(LIB_RELEASE_FILE) | $(RELEASE_DIR)
-	$(BOOT_STAGE2_LINK) --oformat binary
-
-$(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) $(LIB_RELEASE_FILE) | $(DEBUG_DIR)
-	$(BOOT_STAGE2_LINK)
+$(BOOT_STAGE2_SYMBOL_FILE): $(BOOT_STAGE2_OBJ) | $(DEBUG_DIR)
+	$(LD) -m elf_i386 -Ttext=$(BOOT_STAGE2_POSITION) -o $@ $^
 	$(STRIP) $(STRIPFLAGS) $@
 
 # KERNEL
@@ -251,7 +215,6 @@ $(DISK): $(DISK_MOUNT_DIR) \
 	hdiutil detach $$LOOPBACK
 
 $(FS_IMAGE): $(BOOT_CONF) \
-	$(BOOT_STAGE1_RELEASE_FILE) \
 	$(BOOT_STAGE2_RELEASE_FILE) \
 	$(KERNEL_RELEASE_FILE)
 
@@ -259,7 +222,6 @@ $(FS_IMAGE): $(BOOT_CONF) \
 	mke2fs $@
 	$(FUSE_EXT2) $@ $(DISK_MOUNT_DIR) $(FUSE_EXT2_FLAGS)
 
-	sudo cp $(BOOT_STAGE1_RELEASE_FILE) $(DISK_MOUNT_DIR)
 	sudo cp $(BOOT_STAGE2_RELEASE_FILE) $(DISK_MOUNT_DIR)
 	sudo cp $(KERNEL_RELEASE_FILE) $(DISK_MOUNT_DIR)
 	sudo cp $(BOOT_CONF) $(DISK_MOUNT_DIR)

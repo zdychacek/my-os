@@ -3,6 +3,7 @@
 
 %include "src/boot/lib/constants.inc"
 %include "src/boot/lib/stdio.inc"
+%include "src/boot/lib/terminal.inc"
 %include "src/boot/lib/string.inc"
 %include "src/boot/lib/print_hex.inc"
 
@@ -103,11 +104,6 @@ inode_load:
     cmp ax, 0
     je .break
 
-    ; print block number
-    mov si, ax
-    call print_hex
-    call print_nl
-
     call read_block
 
     add bx, 0x400 ; 1 kb increase
@@ -147,11 +143,6 @@ inode_load:
     ; block is null = EOF
     cmp ax, 0
     je .break
-
-    ; print block number
-    mov si, ax
-    call print_hex
-    call print_nl
 
     call read_block
 
