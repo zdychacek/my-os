@@ -1,0 +1,7 @@
+.vscode/settings.json
+release/
+debug/
+obj/
+disk.vdi
+grub/boot/kernel.bin
+.DS_store
