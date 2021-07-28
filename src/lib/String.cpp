@@ -6,6 +6,7 @@ static void PrintDecNumber(unsigned int value, unsigned int width, char *buf, in
 namespace std
 {
   // TODO: extend: https://medium.com/swlh/write-your-own-c-stl-string-class-e20113a8de79
+  // https://codereview.stackexchange.com/questions/230834/a-custom-string-class-implementation
   String::String(const char *s)
   {
     size_t length = 0;

@@ -4,12 +4,16 @@
 #include <hw/cpu.h>
 #include <hw/SerialPort.h>
 #include <memory/PhysicalMemoryManager.h>
-#include <lib/String.h>
-#include <lib/unique_ptr.h>
 #include <debug/Logger.h>
 #include <utils/SingletonFactory.h>
 #include <utils/Singleton.h>
 #include <utils/Bits.h>
+
+#include <lib/algorithm.h>
+#include <lib/type_traits.h>
+#include <lib/utility.h>
+#include <lib/unique_ptr.h>
+#include <lib/String.h>
 
 using namespace Utils;
 using namespace Display;
