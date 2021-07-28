@@ -1,3 +1,4 @@
+DOCKER_ENV := docker run --rm -it -v "$${PWD}":/root/env myos-buildenv
 CXX := x86_64-elf-gcc
 LD := x86_64-elf-ld
 STRIP := x86_64-elf-strip
@@ -37,7 +38,7 @@ CXXFLAGS := \
 	-D__TEST__ \
 	$(BUILD_WARNING)
 
-QEMUFLAGS = -cdrom release/kernel.iso -serial stdio -m 128m # -d int -no-reboot -no-shutdown # -monitor stdio -accel hvf
+QEMUFLAGS = -cdrom release/kernel.iso -serial stdio -m 128m # -d int -no-reboot -no-shutdown -monitor stdio -accel hvf
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug
@@ -100,7 +101,7 @@ $(RELEASE_DIR) $(DEBUG_DIR) $(OBJ_DIR):
 
 $(ISO): $(RELEASE_FILE)
 	cp $(RELEASE_FILE) grub/boot/kernel.bin && \
-	docker run --rm -it -v "$${PWD}":/root/env myos-buildenv grub-mkrescue /usr/lib/grub/i386-pc -o $(ISO) grub
+	$(DOCKER_ENV) grub-mkrescue /usr/lib/grub/i386-pc -o $(ISO) grub
 
 flash: $(ISO)
 	@echo "Which disk? (default: /dev/disk2)" && read answer && answer=$${answer:-/dev/disk2}; \
