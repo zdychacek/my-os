@@ -4,7 +4,7 @@
 #include <smp/Spinlock.h>
 #include <device/WritableDevice.h>
 #include <utils/Singleton.h>
-#include <utils/NonCopyable.h>
+#include <interfaces/NonCopyable.h>
 
 using namespace Utils;
 namespace Display
@@ -12,7 +12,7 @@ namespace Display
   static constexpr size_t MaxColumns = 80;
   static constexpr size_t MaxRows = 25;
 
-  class VGABuffer : private NonCopyable,
+  class VGABuffer : private Interfaces::NonCopyable,
                     public Singleton<VGABuffer>,
                     public Device::WritableDevice
   {

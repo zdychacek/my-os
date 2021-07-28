@@ -5,6 +5,7 @@ static void PrintDecNumber(unsigned int value, unsigned int width, char *buf, in
 
 namespace std
 {
+  // TODO: extend: https://medium.com/swlh/write-your-own-c-stl-string-class-e20113a8de79
   String::String(const char *s)
   {
     size_t length = 0;
@@ -105,6 +106,25 @@ namespace std
     va_end(args);
 
     return String::PrintInto(str, message, args);
+  }
+
+  char *String::Format(const char *message, ...)
+  {
+    va_list args;
+    va_start(args, message);
+    va_end(args);
+
+    char *out = new char[1024];
+
+    for (size_t i = 0; i < 1024; i++)
+    {
+      out[i] = '\0';
+    }
+
+    String::PrintInto(out, message, args);
+
+    // TODO: fix memory leak
+    return out;
   }
 
   size_t String::Length(const char *string)

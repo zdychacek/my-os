@@ -2,7 +2,7 @@
 
 #include <lib/unique_ptr.h>
 #include <utils/SingletonFactory.h>
-#include <debug/Assertion.h>
+#include <debug/Assert.h>
 
 namespace Utils
 {
@@ -28,7 +28,7 @@ namespace Utils
   public:
     static T *GetInstance()
     {
-      Debug::Assertion(m_instance.Get(), "SingletonFactory<>::create(...) call must precede Singleton<>::instance() call.");
+      Assert(m_instance.Get(), "SingletonFactory<>::create(...) call must precede Singleton<>::instance() call.");
 
       return m_instance.Get();
     }

@@ -1,8 +1,8 @@
-#include <hw/Port.h>
+#include <hw/IOPort.h>
 
 namespace hw
 {
-  uint8_t Port::Read8()
+  uint8_t IOPort::Read8()
   {
     uint8_t result;
 
@@ -12,7 +12,7 @@ namespace hw
     return result;
   }
 
-  void Port::Write(uint8_t value)
+  void IOPort::Write(uint8_t value)
   {
     __asm__ __volatile__("outb %%al, (%%dx)"
                          :

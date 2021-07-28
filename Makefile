@@ -37,7 +37,7 @@ CXXFLAGS := \
 	-D__TEST__ \
 	$(BUILD_WARNING)
 
-QEMUFLAGS = -cdrom release/kernel.iso -serial stdio -m 64m # -d int -no-reboot -no-shutdown # -monitor stdio -accel hvf
+QEMUFLAGS = -cdrom release/kernel.iso -serial stdio -m 128m # -d int -no-reboot -no-shutdown # -monitor stdio -accel hvf
 QEMUDBGFLAGS := -s -S
 
 STRIPFLAGS := --only-keep-debug

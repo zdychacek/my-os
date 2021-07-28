@@ -25,18 +25,18 @@ namespace hw
   private:
     SMP::Spinlock m_spinlock;
 
-    enum IOPort : uint16_t
+    enum Register : uint16_t
     {
-      DataRegister = 0,
-      InterruptEnableRegister = 1,
+      Data = 0,
+      InterruptEnable = 1,
       DivisorLow = 0,
       DivisorHigh = 1,
       InterruptIdentification = 2,
-      LineControlRegister = 3,
-      ModemControlRegister = 4,
-      LineStatusRegister = 5,
-      ModemStatusRegister = 6,
-      ScratchRegister = 7
+      LineControl = 3,
+      ModemControl = 4,
+      LineStatus = 5,
+      ModemStatus = 6,
+      Scratch = 7
     };
     uint16_t m_portAddress;
   };

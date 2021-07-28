@@ -1,5 +1,5 @@
 #include <hw/SerialPort.h>
-#include <hw/Port.h>
+#include <hw/IOPort.h>
 #include <lib/String.h>
 #include <smp/Spinlock.h>
 #include <debug/Logger.h>
@@ -11,31 +11,31 @@ namespace hw
     m_portAddress = address;
 
     // Disable all interrupts
-    Port(m_portAddress + IOPort::InterruptEnableRegister).Write(0);
+    IOPort(m_portAddress + Register::InterruptEnable).Write(0);
     // Enable DLAB (set baud rate divisor)
-    Port(m_portAddress + IOPort::LineControlRegister).Write(0x80);
+    IOPort(m_portAddress + Register::LineControl).Write(0x80);
     // Set divisor to 3 (low byte) 38400 baud
-    Port(m_portAddress + IOPort::DivisorLow).Write(0x03);
+    IOPort(m_portAddress + Register::DivisorLow).Write(0x03);
     // Set divisor high byte to 0
-    Port(m_portAddress + IOPort::DivisorLow).Write(0);
+    IOPort(m_portAddress + Register::DivisorLow).Write(0);
     // 8 bits, no parity, one stop bit
-    Port(m_portAddress + IOPort::LineControlRegister).Write(0x03);
+    IOPort(m_portAddress + Register::LineControl).Write(0x03);
     // Enable FIFO, clear them, with 14-byte threshold
-    Port(m_portAddress + IOPort::InterruptIdentification).Write(0xc7);
+    IOPort(m_portAddress + Register::InterruptIdentification).Write(0xc7);
     // IRQs enabled, RTS/DSR set
-    Port(m_portAddress + IOPort::ModemControlRegister).Write(0x0b);
+    IOPort(m_portAddress + Register::ModemControl).Write(0x0b);
   }
 
   void SerialPort::Write(char ch)
   {
-    Port status(m_portAddress + IOPort::LineStatusRegister);
+    IOPort status(m_portAddress + Register::LineStatus);
 
     // while TX buffer full
     while ((status.Read8() & 0x20) == 0)
     {
     }
 
-    Port(m_portAddress).Write((uint8_t)ch);
+    IOPort(m_portAddress).Write((uint8_t)ch);
   }
 
   void SerialPort::Write(const char *string, ...)
@@ -59,13 +59,13 @@ namespace hw
 
   char SerialPort::Read()
   {
-    Port status(m_portAddress + IOPort::LineStatusRegister);
+    IOPort status(m_portAddress + Register::LineStatus);
 
     // while RX buffer full
     while ((status.Read8() & 1) == 0)
     {
     }
 
-    return Port(m_portAddress).Read8();
+    return IOPort(m_portAddress).Read8();
   }
 }

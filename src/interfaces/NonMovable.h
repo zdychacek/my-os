@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Utils
+namespace Interfaces
 {
   class NonMovable
   {

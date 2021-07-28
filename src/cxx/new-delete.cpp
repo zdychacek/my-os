@@ -5,6 +5,7 @@ static uintptr_t heapBase = 0x2000000;
 
 void *__attribute__((weak)) operator new(long unsigned int size)
 {
+  // TODO: replace with heap allocator when done
   void *pointer = (void *)(PhysicalMemoryManager::GetInstance()->ConvertPhysicalAddressToVirtual(heapBase));
 
   heapBase += size;
@@ -14,11 +15,12 @@ void *__attribute__((weak)) operator new(long unsigned int size)
 
 void *__attribute__((weak)) operator new[](long unsigned int size)
 {
-  void *pointer = (void *)heapBase;
+  // TODO: replace with heap allocator when done
+  void *pointer = (void *)(PhysicalMemoryManager::GetInstance()->ConvertPhysicalAddressToVirtual(heapBase));
 
   heapBase += size;
 
-  return (void *)pointer;
+  return pointer;
 }
 
 void __attribute__((weak)) operator delete(void *ptr)

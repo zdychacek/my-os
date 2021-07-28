@@ -19,6 +19,7 @@ namespace std
 
     static size_t PrintInto(char *outBuffer, const char *message, va_list args);
     static size_t PrintInto(char *str, const char *message, ...);
+    static char *Format(const char *message, ...);
     static size_t Length(const char *string);
     static size_t Length(String &string);
   };

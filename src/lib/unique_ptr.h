@@ -1,6 +1,7 @@
 #pragma once
 
-#include <debug/Assertion.h>
+#include <debug/Assert.h>
+#include <interfaces/NonCopyable.h>
 
 namespace std
 {
@@ -18,18 +19,13 @@ namespace std
   };
 
   template <typename T, typename Deleter = DefaultDeleter<T>>
-  class unique_ptr
+  class unique_ptr : private Interfaces::NonCopyable
   {
   public:
     //construct
     unique_ptr(T *pT = nullptr);
     //destroy
     ~unique_ptr();
-
-    //not allow copyable
-  private:
-    unique_ptr(const unique_ptr &);
-    unique_ptr &operator=(const unique_ptr &);
 
   public:
     //reset
@@ -115,7 +111,7 @@ namespace std
   template <typename T, typename Deleter>
   T &unique_ptr<T, Deleter>::operator*()
   {
-    Assertion(*this);
+    Assert(*this, "*this must be no-null pointer");
     return *m_pointer;
   }
 

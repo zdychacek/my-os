@@ -51,6 +51,13 @@ multiboot_header_start:
   mb_tag_terminator_end:
 multiboot_header_end:
 
+; Place to store information passed from bootloader.
+magic_number:
+  dd 0
+
+multiboot_pointer:
+  dd 0
+
 section .mb_text
 global bootstrap
 ; Bootstrap function: called from Multiboot-compatible bootloader.
@@ -58,9 +65,9 @@ bootstrap:
   ; Disable interrupts.
   cli
 
-  ; TODO:
-  mov edi, eax
-  mov esi, ebx
+  ; Save magic number and multiboot structure pointer for later use.
+  mov [magic_number], eax
+  mov [multiboot_pointer], ebx
 
   ; Set up the stack.
   mov	esp, bootstrap_stack
@@ -105,7 +112,6 @@ GDT:				; Global Descriptor Table (64-bit).
   dw $ - GDT - 1		; Limit.
   dq GDT			; Base.
 
-
 [BITS 64]
 
 extern KernelMain
@@ -120,13 +126,13 @@ realm64:
   mov	fs, ax
   mov	gs, ax
 
-  ; Call KernelMain().
-  ; First, set up the arguments.
-  ; Calling convention uses rdi as the first argument.
+  ; Call the kernel providing magic number and multiboot structure pointer.
+  mov edi, [magic_number]
+  mov esi, [multiboot_pointer]
 
-  ;TODO: pass multiboot info in rdi register
   mov	r9, KernelMain
   jmp	r9
+  jmp $
   ret
 
 [BITS 32]
