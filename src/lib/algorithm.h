@@ -1,9 +1,11 @@
 #pragma once
 
+#include <lib/concepts.h>
+
 namespace std
 {
   template <class ForwardIt, class T>
-  ForwardIt remove(ForwardIt first, ForwardIt last, const T &value)
+  ForwardIt remove(ForwardIt first, ForwardIt last, const T &value) requires Iterable<ForwardIt>
   {
     first = find(first, last, value);
 
@@ -82,6 +84,7 @@ namespace std
     return last;
   }
 
+  /// copy
   template <class InputIt, class OutputIt>
   OutputIt copy(InputIt first, InputIt last, OutputIt d_first)
   {
@@ -107,5 +110,61 @@ namespace std
     }
 
     return d_first;
+  }
+
+  template <class InputIt, class Size, class OutputIt>
+  OutputIt copy_n(InputIt first, Size count, OutputIt result)
+  {
+    if (count > 0)
+    {
+      *result++ = *first;
+
+      for (Size i = 1; i < count; ++i)
+      {
+        *result++ = *++first;
+      }
+    }
+
+    return result;
+  }
+
+  /// equal
+  template <class InputIt1, class InputIt2>
+  bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2)
+  {
+    for (; first1 != last1; ++first1, ++first2)
+    {
+      if (!(*first1 == *first2))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  template <class InputIt1, class InputIt2, class BinaryPredicate>
+  bool equal(InputIt1 first1, InputIt1 last1, InputIt2 first2, BinaryPredicate p)
+  {
+    for (; first1 != last1; ++first1, ++first2)
+    {
+      if (!p(*first1, *first2))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  template <class InputIt, class UnaryFunction>
+  constexpr UnaryFunction for_each(InputIt first, InputIt last, UnaryFunction f)
+  {
+    for (; first != last; ++first)
+    {
+      f(*first);
+    }
+
+    return f; // implicit move since C++11
   }
 }
