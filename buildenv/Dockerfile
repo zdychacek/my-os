@@ -1,11 +1,12 @@
-FROM randomdude/gcc-cross-x86_64-elf
+FROM ubuntu:impish
 
-RUN apt-get update 
-RUN apt-get upgrade -y
-RUN apt-get install -y nasm
-RUN apt-get install -y xorriso
-RUN apt-get install -y grub-pc-bin
-RUN apt-get install -y grub-common
+ARG DEBIAN_FRONTEND=noninteractive
 
-VOLUME /root/env
-WORKDIR /root/env
+ADD build-toolchain.sh /opt/build-toolchain.sh
+
+RUN /opt/build-toolchain.sh
+
+ENV PATH "/opt/toolchain:$PATH"
+ENV MYOS "true"
+ENV BUILDROOT "/opt/"
+WORKDIR /opt
