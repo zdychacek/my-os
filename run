@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+iso=${BUILDROOT}release/kernel.iso
+symbol_file=${BUILDROOT}release/kernel.sym
+serialout=stdio # file:${BUILDROOT}serial.log
+memory=128m
+qemu_flags="-cdrom ${iso} -m ${memory} -serial ${serialout}" # -d int -no-reboot -no-shutdown -monitor stdio -accel kvm
+
+# compile
+echo "Building kernel..."
+./d make all release/kernel.sym
+
+case $1 in
+  debug)
+    echo "Starting qemu in debug mode..."
+    qemu-system-x86_64 -s -S ${qemu_flags}
+    ;;
+
+  gdb)
+    echo "Starting qemu and gdb debugger..."
+    qemu-system-x86_64 -s -S ${qemu_flags} &
+    gdb -tui -ex "target remote localhost:1234" -ex "add-symbol-file ${symbol_file}"
+    ;;
+
+  vbox)
+    echo "Starting Virtual Box..."
+    if [ -f ${BUILDROOT}release/disk.vdi ]; then
+        VBoxManage unregistervm myos --delete
+        rm -f ${BUILDROOT}release/disk.vdi
+    fi
+    VBoxManage convertfromraw ${iso} ${BUILDROOT}release/disk.vdi
+    VBoxManage createvm --name myos --register
+    VBoxManage modifyvm myos --acpi on --ioapic on --cpus 2 --memory ${memory} --boot1 disk --boot2 none --boot3 none --boot4 none
+    VBoxManage storagectl myos --name "SATA Controller" --add sata
+    VBoxManage storageattach myos --storagectl "SATA Controller" --port 0 --type hdd --medium ${BUILDROOT}release/disk.vdi
+    VBoxManage startvm myos
+    ;;
+
+  flash)
+    echo "Which disk? (default: /dev/disk2)" && read answer && answer=${answer:-/dev/disk2}; \
+    sudo dd if=${iso} of=${answer} bs=1m
+    ;;
+
+  *)
+    echo "Starting qemu..."
+    qemu-system-x86_64 ${qemu_flags}
+    ;;
+esac

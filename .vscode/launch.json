@@ -13,7 +13,7 @@
             "args": [],
             "targetArchitecture": "x64",
             "MIMode": "gdb",
-            "miDebuggerPath": "gdb",
+            "miDebuggerPath": "/usr/local/bin/gdb",
             "miDebuggerArgs": "",
             "setupCommands": [
                 {
@@ -21,7 +21,7 @@
                     "description": "Connect to QEMU remote debugger"
                 },
                 {
-                    "text": "add-symbol-file ${workspaceRoot}/debug/kernel.sym",
+                    "text": "add-symbol-file ${workspaceRoot}/release/kernel.sym",
                     "description": "Use Kernel Symbol File"
                 },
                 {
